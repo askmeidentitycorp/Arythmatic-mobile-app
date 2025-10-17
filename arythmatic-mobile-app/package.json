@@ -1,0 +1,34 @@
+{
+  "license": "0BSD",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~53.0.22",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.6",
+    "@gorhom/portal": "*",
+    "react-native-svg": "15.11.2",
+    "@expo/metro-runtime": "~5.0.5",
+    "react-native-screens": "~4.11.1",
+    "react-native-chart-kit": "*",
+    "react-native-portalize": "*",
+    "@react-navigation/stack": "*",
+    "react-native-reanimated": "~3.17.4",
+    "@react-navigation/native": "*",
+    "@react-native-picker/picker": "2.11.1",
+    "react-native-dropdown-picker": "*",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-safe-area-context": "5.4.0",
+    "@react-native-async-storage/async-storage": "2.1.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
