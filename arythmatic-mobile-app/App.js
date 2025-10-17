@@ -4,8 +4,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "./constants/config";
 
+// Auth system
+import AuthProvider, { useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
 import DashboardScreen from "./screens/DashboardScreen";
-import LoginScreen from "./screens/LoginScreen";
 
 // Business screens
 import CustomerScreen from "./screens/CustomerScreen";
@@ -19,8 +22,9 @@ import SalesRepsScreen from "./screens/SalesRepsScreen";
 import Sidebar from "./components/Sidebar";
 const _React = React; 
 
-export default function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+// Main App Component (wrapped by AuthProvider)
+const AppContent = () => {
+  const { signOut, user, isTestMode, isMSAL } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState("Dashboard");
   const [businessScreen, setBusinessScreen] = useState("SalesReps");
@@ -29,16 +33,7 @@ export default function App() {
   const [navigationParams, setNavigationParams] = useState(null);
   const navigationRef = useRef(null);
 
-  console.log("✅ App.js mounted");
-
-
-  if (!loggedIn) {
-    return (
-      <SafeAreaProvider>
-        <LoginScreen onLogin={() => setLoggedIn(true)} />
-      </SafeAreaProvider>
-    );
-  }
+  console.log("✅ App.js mounted with auth user:", user?.email);
 
   // Function to navigate to Interactions
   const navigateToInteractions = (repId, repName) => {
@@ -171,10 +166,16 @@ export default function App() {
               Home / {currentScreen === "Business" ? businessScreen : currentScreen}
             </Text>
 
-            {/* Profile Icon */}
-            <TouchableOpacity style={styles.profileBtn} onPress={() => {}}>
-              <Text style={styles.profileIcon}>👤</Text>
-            </TouchableOpacity>
+            {/* User Profile & Logout */}
+            <View style={styles.userSection}>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{user?.name || user?.email}</Text>
+                <Text style={styles.userProvider}>{isTestMode ? 'Test' : isMSAL ? 'MSAL' : 'Auth'}</Text>
+              </View>
+              <TouchableOpacity style={styles.profileBtn} onPress={signOut}>
+                <Text style={styles.profileIcon}>🚪</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Screen content */}
@@ -213,6 +214,19 @@ export default function App() {
       </View>
     </SafeAreaProvider>
   );
+};
+
+// Main App with Auth Provider
+export default function App() {
+  return (
+    <AuthProvider>
+      <SafeAreaProvider>
+        <ProtectedRoute>
+          <AppContent />
+        </ProtectedRoute>
+      </SafeAreaProvider>
+    </AuthProvider>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -249,6 +263,24 @@ const styles = StyleSheet.create({
     fontWeight: "600", 
     fontSize: 14 
   },
+  userSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  userInfo: {
+    marginRight: 8,
+    alignItems: 'flex-end',
+  },
+  userName: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  userProvider: {
+    fontSize: 10,
+    color: colors.subtext,
+  },
   profileBtn: {
     width: 32,
     height: 32,
@@ -258,7 +290,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
-    marginLeft: 12,
   },
   profileIcon: { fontSize: 15, color: colors.text, fontWeight: "600" },
 });
