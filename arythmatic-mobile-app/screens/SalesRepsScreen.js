@@ -13,6 +13,7 @@ import { colors } from '../constants/config';
 
 // Import hooks and components
 import CustomerPagination from '../components/Customer/CustomerPagination';
+import CrudModal from '../components/CrudModal';
 import SalesRepCard from '../components/SalesRep/SalesRepCard';
 import SalesRepHeader from '../components/SalesRep/SalesRepHeader';
 import SalesRepKPIs from '../components/SalesRep/SalesRepKPIs';
@@ -32,6 +33,11 @@ export default function SalesRepsScreen() {
   });
 
   const [searchParams, setSearchParams] = useState({});
+  
+  // CRUD Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [selectedSalesRep, setSelectedSalesRep] = useState(null);
 
   // Debounce search
   useEffect(() => {
@@ -76,9 +82,75 @@ export default function SalesRepsScreen() {
   } = useSalesRepMetrics();
 
   const {
+    createSalesRep,
     updateSalesRep,
-    deleteSalesRep
+    deleteSalesRep,
+    loading: mutationLoading
   } = useSalesRepMutations();
+  
+  // Sales Rep form field configuration
+  const salesRepFields = [
+    {
+      key: 'name',
+      label: 'Full Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter full name',
+      minLength: 2,
+    },
+    {
+      key: 'email',
+      label: 'Email Address',
+      type: 'email',
+      required: true,
+      placeholder: 'sales.rep@company.com',
+    },
+    {
+      key: 'phone',
+      label: 'Phone Number',
+      type: 'text',
+      placeholder: '+1 234 567 8900',
+      help: 'Include country code',
+    },
+    {
+      key: 'employee_id',
+      label: 'Employee ID',
+      type: 'text',
+      placeholder: 'EMP001',
+      help: 'Unique employee identifier',
+    },
+    {
+      key: 'role',
+      label: 'Role',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Sales Agent', value: 'sales_agent' },
+        { label: 'Sales Manager', value: 'sales_manager' },
+        { label: 'Senior Sales Rep', value: 'senior_sales_rep' },
+        { label: 'Account Manager', value: 'account_manager' },
+      ],
+      defaultValue: 'sales_agent',
+    },
+    {
+      key: 'territories',
+      label: 'Territories',
+      type: 'text',
+      placeholder: 'e.g., North America, Europe',
+      help: 'Comma-separated list of territories',
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Active', value: true },
+        { label: 'Inactive', value: false },
+      ],
+      defaultValue: true,
+    },
+  ];
 
   const handleSearchChange = (text) => {
     setSearchQuery(text);
@@ -156,8 +228,50 @@ export default function SalesRepsScreen() {
         );
         break;
 
+      case "Edit Sales Rep":
+        setSelectedSalesRep(salesRep);
+        setModalMode('edit');
+        setModalVisible(true);
+        break;
+        
       default:
         Alert.alert("Action", `${action} clicked for ${salesRep.name}`);
+    }
+  };
+  
+  // Handle Add Sales Rep
+  const handleAddSalesRep = () => {
+    setSelectedSalesRep(null);
+    setModalMode('create');
+    setModalVisible(true);
+  };
+  
+  // Handle form submission (Create/Update)
+  const handleFormSubmit = async (formData) => {
+    try {
+      // Convert string boolean to actual boolean for is_active
+      if (formData.is_active !== undefined) {
+        formData.is_active = formData.is_active === 'true' || formData.is_active === true;
+      }
+      
+      // Handle territories as array
+      if (formData.territories && typeof formData.territories === 'string') {
+        formData.territories = formData.territories.split(',').map(t => t.trim()).filter(t => t);
+      }
+      
+      if (modalMode === 'create') {
+        console.log('🆕 Creating sales rep:', formData);
+        await createSalesRep(formData);
+        Alert.alert('Success', 'Sales rep created successfully!');
+      } else {
+        console.log('📝 Updating sales rep:', selectedSalesRep.id, formData);
+        await updateSalesRep(selectedSalesRep.id, formData, false, true); // useNested = false, partial = true
+        Alert.alert('Success', 'Sales rep updated successfully!');
+      }
+      refresh();
+    } catch (error) {
+      console.error('❌ Sales rep form submission error:', error);
+      throw error; // Re-throw to let CrudModal handle the error display
     }
   };
 
@@ -187,7 +301,7 @@ export default function SalesRepsScreen() {
     <View style={styles.container}>
       <ScrollView>
         {/* Header */}
-        <SalesRepHeader onAddPress={() => Alert.alert("Add Sales Rep")} />
+        <SalesRepHeader onAddPress={handleAddSalesRep} />
 
         {/* KPIs */}
         <SalesRepKPIs
@@ -237,6 +351,18 @@ export default function SalesRepsScreen() {
           />
         )}
       </ScrollView>
+      
+      {/* CRUD Modal */}
+      <CrudModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleFormSubmit}
+        title={modalMode === 'create' ? 'Add Sales Rep' : 'Edit Sales Rep'}
+        fields={salesRepFields}
+        initialData={selectedSalesRep || {}}
+        loading={mutationLoading}
+        mode={modalMode}
+      />
     </View>
   );
 }

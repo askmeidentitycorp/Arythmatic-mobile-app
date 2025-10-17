@@ -15,6 +15,7 @@ import CustomerHeader from '../components/Customer/CustomerHeader';
 import CustomerKPIs from '../components/Customer/CustomerKPIs';
 import CustomerPagination from '../components/Customer/CustomerPagination';
 import CustomerSearchAndFilters from '../components/Customer/CustomerSearchAndFilters';
+import CrudModal from '../components/CrudModal';
 import { colors } from '../constants/config';
 import { useCustomerMutations, useCustomers } from '../hooks/useCustomers';
 
@@ -26,6 +27,11 @@ export default function CustomerScreen() {
     countryCode: '',
   });
   const [searchParams, setSearchParams] = useState({});
+  
+  // CRUD Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -49,9 +55,75 @@ export default function CustomerScreen() {
   } = useCustomers(searchParams, 20, true);
 
   const {
+    createCustomer,
     updateCustomer,
-    deleteCustomer
+    deleteCustomer,
+    loading: mutationLoading
   } = useCustomerMutations();
+  
+  // Customer form field configuration
+  const customerFields = [
+    {
+      key: 'displayName',
+      label: 'Customer Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter customer name',
+      minLength: 2,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      type: 'email',
+      required: true,
+      placeholder: 'customer@company.com',
+    },
+    {
+      key: 'phone',
+      label: 'Phone Number',
+      type: 'text',
+      placeholder: '+1 234 567 8900',
+      help: 'Include country code',
+    },
+    {
+      key: 'type',
+      label: 'Customer Type',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Individual', value: 'individual' },
+        { label: 'Business', value: 'business' },
+        { label: 'Enterprise', value: 'enterprise' },
+      ],
+      defaultValue: 'individual',
+    },
+    {
+      key: 'countryCode',
+      label: 'Country',
+      type: 'text',
+      required: true,
+      placeholder: 'US, IN, UK, etc.',
+      help: 'Two-letter country code',
+      validate: (value) => {
+        if (value.length !== 2) {
+          return 'Country code must be 2 letters';
+        }
+        return true;
+      },
+    },
+    {
+      key: 'address',
+      label: 'Address',
+      type: 'multiline',
+      placeholder: 'Enter full address...',
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      type: 'multiline',
+      placeholder: 'Additional notes about this customer...',
+    },
+  ];
 
   const handleSearchChange = (text) => {
     setSearchQuery(text);
@@ -81,7 +153,9 @@ export default function CustomerScreen() {
         );
         break;
       case "Edit Customer":
-        Alert.alert("Edit Customer", `Edit ${customer.displayName} - Feature coming soon`);
+        setSelectedCustomer(customer);
+        setModalMode('edit');
+        setModalVisible(true);
         break;
       case "View Orders":
         Alert.alert("View Orders", `Orders for ${customer.displayName} - Feature coming soon`);
@@ -145,7 +219,28 @@ export default function CustomerScreen() {
   };
 
   const handleAddCustomer = () => {
-    Alert.alert("Add Customer", "Add customer functionality to be implemented");
+    setSelectedCustomer(null);
+    setModalMode('create');
+    setModalVisible(true);
+  };
+  
+  // Handle form submission (Create/Update)
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (modalMode === 'create') {
+        console.log('🆕 Creating customer:', formData);
+        await createCustomer(formData, true); // useNested = true
+        Alert.alert('Success', 'Customer created successfully!');
+      } else {
+        console.log('📝 Updating customer:', selectedCustomer.id, formData);
+        await updateCustomer(selectedCustomer.id, formData, true, false); // useNested = true, partial = false
+        Alert.alert('Success', 'Customer updated successfully!');
+      }
+      refresh();
+    } catch (error) {
+      console.error('❌ Form submission error:', error);
+      throw error; // Re-throw to let CrudModal handle the error display
+    }
   };
 
   if (loading && customers.length === 0) {
@@ -248,11 +343,23 @@ export default function CustomerScreen() {
             <Text style={styles.customersSummaryDetail}>
               Last: {customers[customers.length - 1]?.displayName}
             </Text>
-          </View>
-        )}
+        </View>
       </ScrollView>
+      
+      {/* CRUD Modal */}
+      <CrudModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleFormSubmit}
+        title={modalMode === 'create' ? 'Add Customer' : 'Edit Customer'}
+        fields={customerFields}
+        initialData={selectedCustomer || {}}
+        loading={mutationLoading}
+        mode={modalMode}
+      />
     </View>
   );
+}
 }
 
 const styles = StyleSheet.create({
