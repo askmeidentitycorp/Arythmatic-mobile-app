@@ -197,6 +197,27 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     ];
   }, [analyticsData, formatCurrency, currency]);
 
+  // Helper function to create default chart data
+  const createDefaultChartData = useCallback(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map((month, index) => ({
+      label: month,
+      value: Math.floor(Math.random() * 50) + 10,
+      color: colors.primary || '#6B5CE7'
+    }));
+  }, []);
+
+  // Helper function to format period labels
+  const formatPeriodLabel = useCallback((period) => {
+    if (!period) return 'Period';
+    try {
+      const date = new Date(period);
+      return date.toLocaleDateString('en-US', { month: 'short' });
+    } catch {
+      return period;
+    }
+  }, []);
+
   // FIXED: Chart data from analytics with proper currency handling
   const chartData = useMemo(() => {
     console.log('🔍 FIXED: Checking chart data sources...');
@@ -264,28 +285,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     }
 
     return trends;
-  }, [analyticsData, currency]);
-
-  // Helper function to create default chart data
-  const createDefaultChartData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map((month, index) => ({
-      label: month,
-      value: Math.floor(Math.random() * 50) + 10,
-      color: colors.primary || '#6B5CE7'
-    }));
-  };
-
-  // Helper function to format period labels
-  const formatPeriodLabel = (period) => {
-    if (!period) return 'Period';
-    try {
-      const date = new Date(period);
-      return date.toLocaleDateString('en-US', { month: 'short' });
-    } catch {
-      return period;
-    }
-  };
+  }, [analyticsData, currency, createDefaultChartData, formatPeriodLabel]);
 
   // FIXED: Product performance from analytics with proper currency handling
   const productPerformance = useMemo(() => {
