@@ -360,7 +360,6 @@ export default function CustomerScreen() {
     </View>
   );
 }
-}
 
 const styles = StyleSheet.create({
   container: {
