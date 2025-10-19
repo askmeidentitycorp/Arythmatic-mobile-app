@@ -13,6 +13,7 @@ import { colors } from '../constants/config';
 
 // Import components
 import CustomerPagination from '../components/Customer/CustomerPagination';
+import CrudModal from '../components/CrudModal';
 import ProductCard from '../components/Product/ProductCard';
 import ProductHeader from '../components/Product/ProductHeader';
 import ProductKPIs from '../components/Product/ProductKPIs';
@@ -31,6 +32,11 @@ export default function ProductScreen() {
   });
 
   const [searchParams, setSearchParams] = useState({});
+  
+  // CRUD Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Debounce search
   useEffect(() => {
@@ -66,9 +72,73 @@ export default function ProductScreen() {
   } = useProducts(searchParams, 20, true); // useNested = true
 
   const {
+    createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    loading: mutationLoading
   } = useProductMutations();
+  
+  // Product form field configuration
+  const productFields = [
+    {
+      key: 'label',
+      label: 'Product Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter product name',
+      minLength: 2,
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: 'multiline',
+      placeholder: 'Describe the product features and benefits...',
+    },
+    {
+      key: 'productType',
+      label: 'Product Type',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Physical Product', value: 'physical' },
+        { label: 'Digital Service', value: 'service' },
+        { label: 'Software', value: 'software' },
+        { label: 'Subscription', value: 'subscription' },
+      ],
+      defaultValue: 'physical',
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      type: 'number',
+      placeholder: '0.00',
+      help: 'Base price in USD',
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      type: 'text',
+      placeholder: 'e.g., Electronics, Software, Consulting',
+    },
+    {
+      key: 'sku',
+      label: 'SKU',
+      type: 'text',
+      placeholder: 'Product SKU/Code',
+      help: 'Stock Keeping Unit identifier',
+    },
+    {
+      key: 'isActive',
+      label: 'Status',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Active', value: true },
+        { label: 'Inactive', value: false },
+      ],
+      defaultValue: true,
+    },
+  ];
 
   const handleProductAction = async (product, action) => {
     console.log('🎯 Product Action:', { action, product: product.label });
@@ -122,8 +192,50 @@ export default function ProductScreen() {
         );
         break;
 
+      case "Edit Product":
+        setSelectedProduct(product);
+        setModalMode('edit');
+        setModalVisible(true);
+        break;
+        
       default:
         Alert.alert("Action", `${action} clicked for ${product.label}`);
+    }
+  };
+  
+  // Handle Add Product
+  const handleAddProduct = () => {
+    setSelectedProduct(null);
+    setModalMode('create');
+    setModalVisible(true);
+  };
+  
+  // Handle form submission (Create/Update)
+  const handleFormSubmit = async (formData) => {
+    try {
+      // Convert string boolean to actual boolean for isActive
+      if (formData.isActive !== undefined) {
+        formData.isActive = formData.isActive === 'true' || formData.isActive === true;
+      }
+      
+      // Convert price to number
+      if (formData.price) {
+        formData.price = parseFloat(formData.price);
+      }
+      
+      if (modalMode === 'create') {
+        console.log('🆕 Creating product:', formData);
+        await createProduct(formData, true); // useNested = true
+        Alert.alert('Success', 'Product created successfully!');
+      } else {
+        console.log('📝 Updating product:', selectedProduct.id, formData);
+        await updateProduct(selectedProduct.id, formData, true, false); // useNested = true, partial = false
+        Alert.alert('Success', 'Product updated successfully!');
+      }
+      refresh();
+    } catch (error) {
+      console.error('❌ Product form submission error:', error);
+      throw error; // Re-throw to let CrudModal handle the error display
     }
   };
 
@@ -153,7 +265,7 @@ export default function ProductScreen() {
     <View style={styles.container}>
       <ScrollView>
         {/* Header */}
-        <ProductHeader onAddPress={() => Alert.alert("Add Product")} />
+        <ProductHeader onAddPress={handleAddProduct} />
 
         {/* KPIs - Pass current page products and total count */}
         <ProductKPIs
@@ -192,6 +304,18 @@ export default function ProductScreen() {
           />
         )}
       </ScrollView>
+      
+      {/* CRUD Modal */}
+      <CrudModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleFormSubmit}
+        title={modalMode === 'create' ? 'Add Product' : 'Edit Product'}
+        fields={productFields}
+        initialData={selectedProduct || {}}
+        loading={mutationLoading}
+        mode={modalMode}
+      />
     </View>
   );
 }

@@ -62,3 +62,104 @@ export function usePayments(initialFilters = {}, initialPageSize = 10) {
     refetch: fetchPayments,
   };
 }
+
+// Payment mutations hook
+export function usePaymentMutations() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const createPayment = useCallback(async (data, showAlert = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await paymentService.create(data);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to create payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updatePayment = useCallback(async (id, data, isPartialUpdate = false, showAlert = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await paymentService.update(id, data);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to update payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deletePayment = useCallback(async (id, showAlert = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await paymentService.delete(id);
+      return true;
+    } catch (err) {
+      setError(err.message || 'Failed to delete payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const processPayment = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await paymentService.processPayment(id);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to process payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refundPayment = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await paymentService.refundPayment(id);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to refund payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const voidPayment = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await paymentService.voidPayment(id);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to void payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    createPayment,
+    updatePayment,
+    deletePayment,
+    processPayment,
+    refundPayment,
+    voidPayment,
+    loading,
+    error,
+  };
+}
