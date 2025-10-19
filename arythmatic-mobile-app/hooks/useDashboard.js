@@ -26,22 +26,13 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     }
   }, []);
 
-  // Format currency - improved to handle proper currency display
+  // Format currency - show actual values like $79,093 instead of $79K
   const formatCurrency = useCallback((amount, curr = currency) => {
     const symbols = { USD: '$', INR: '₹', EUR: '€' };
-    if (typeof amount !== 'number' || isNaN(amount)) return `${symbols[curr] || curr} 0`;
+    if (typeof amount !== 'number' || isNaN(amount)) return `${symbols[curr] || curr}0`;
     
-    // Format large numbers with K, M suffixes for better display
-    const absAmount = Math.abs(amount);
-    let displayAmount;
-    
-    if (absAmount >= 1000000) {
-      displayAmount = (amount / 1000000).toFixed(1) + 'M';
-    } else if (absAmount >= 1000) {
-      displayAmount = (amount / 1000).toFixed(1) + 'K';
-    } else {
-      displayAmount = Math.round(amount).toString();
-    }
+    // Format with commas for thousands separators (like website)
+    const displayAmount = Math.round(amount).toLocaleString();
     
     return `${symbols[curr] || curr}${displayAmount}`;
   }, [currency]);

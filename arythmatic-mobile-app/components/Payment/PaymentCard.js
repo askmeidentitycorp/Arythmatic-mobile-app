@@ -20,7 +20,7 @@ const getStatusColor = (status) => {
   }
 };
 
-export default function PaymentCard({ payment, onAction }) {
+export default function PaymentCard({ payment, onAction, onToggle, expanded }) {
   // Add safety checks for payment object
   if (!payment) {
     return null;
@@ -28,29 +28,35 @@ export default function PaymentCard({ payment, onAction }) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.main}>
-        <Text style={styles.amount}>
-          {formatCurrency(payment.amount, payment.currency)}
-        </Text>
-        <Text style={styles.method}>{payment.paymentmethod || 'N/A'}</Text>
-        <Text style={[styles.status, { color: getStatusColor(payment.status) }]}>
-          {payment.status || 'Unknown'}
-        </Text>
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => onAction(payment, 'view')}>
-          <Text style={styles.actionText}>View</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onAction(payment, 'edit')}>
-          <Text style={styles.actionText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onAction(payment, 'refund')}>
-          <Text style={[styles.actionText, { color: colors.warn }]}>Refund</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onAction(payment, 'void')}>
-          <Text style={[styles.actionText, { color: colors.bad }]}>Void</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity onPress={onToggle} style={styles.header}>
+        <View style={styles.main}>
+          <Text style={styles.amount}>
+            {formatCurrency(payment.amount, payment.currency)}
+          </Text>
+          <Text style={styles.method}>{payment.paymentmethod || 'N/A'}</Text>
+          <Text style={[styles.status, { color: getStatusColor(payment.status) }]}>
+            {payment.status || 'Unknown'}
+          </Text>
+        </View>
+        <Text style={styles.expandIcon}>{expanded ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+      
+      {expanded && (
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onAction?.(payment, 'Edit')}>
+            <Text style={styles.actionText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onAction?.(payment, 'Process Payment')}>
+            <Text style={styles.actionText}>Process</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onAction?.(payment, 'Refund')}>
+            <Text style={[styles.actionText, { color: colors.warn }]}>Refund</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onAction?.(payment, 'Delete')}>
+            <Text style={[styles.actionText, { color: colors.bad }]}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -64,8 +70,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   main: {
-    marginBottom: 12,
+    flex: 1,
   },
   amount: {
     fontWeight: '700',
@@ -82,13 +93,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+  expandIcon: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 12,
+  },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  actionBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: colors.bg,
   },
   actionText: {
     fontWeight: '600',
     fontSize: 14,
     color: colors.primary,
+    textAlign: 'center',
   },
 });

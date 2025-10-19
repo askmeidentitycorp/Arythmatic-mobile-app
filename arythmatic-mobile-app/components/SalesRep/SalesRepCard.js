@@ -50,7 +50,7 @@ const Tag = ({ label, intent = "info" }) => {
   );
 };
 
-const SalesRepCard = ({ salesRep, onActionPress }) => {
+const SalesRepCard = ({ salesRep, onAction }) => {
   const [expanded, setExpanded] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("roles");
@@ -85,7 +85,7 @@ const SalesRepCard = ({ salesRep, onActionPress }) => {
   };
 
   const handleAction = (action) => {
-    onActionPress(salesRep, action);
+    onAction?.(salesRep, action);
     setActionsVisible(false);
   };
 
@@ -156,6 +156,8 @@ const SalesRepCard = ({ salesRep, onActionPress }) => {
             "View Details",
             "Edit Sales Rep",
             "View Performance",
+            "Show Invoices",
+            "Show Interactions",
             "Deactivate",
             "Delete",
           ].map((action, i) => (

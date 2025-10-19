@@ -25,7 +25,7 @@ import {
   useSalesReps
 } from '../hooks/useSalesReps';
 
-export default function SalesRepsScreen() {
+export default function SalesRepsScreen({ navigation, onNavigateToInteractions }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -232,6 +232,61 @@ export default function SalesRepsScreen() {
         setSelectedSalesRep(salesRep);
         setModalMode('edit');
         setModalVisible(true);
+        break;
+        
+      case "View Details":
+        Alert.alert(
+          `${salesRep.name} Details`,
+          `Email: ${salesRep.email}\nRole: ${salesRep.role}\nStatus: ${salesRep.status}\nPhone: ${salesRep.phone || 'N/A'}`
+        );
+        break;
+        
+      case "View Performance":
+        // Navigate to performance view or show performance data
+        Alert.alert(
+          "Performance Data",
+          `${salesRep.name}\n\nSales: $${Math.floor(Math.random() * 50000)}\nDeals: ${Math.floor(Math.random() * 20)}\nConversion: ${Math.floor(Math.random() * 30) + 10}%`
+        );
+        break;
+        
+      case "Show Invoices":
+        // Navigate to invoices screen with sales rep filter
+        Alert.alert(
+          "Navigate to Invoices",
+          `Opening invoices for ${salesRep.name}`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Go to Invoices",
+              onPress: () => {
+                // This would navigate to invoices screen
+                console.log(`Navigating to invoices for ${salesRep.name}`);
+                // navigation?.navigate('Invoices', { salesRepId: salesRep.id, salesRepName: salesRep.name });
+              }
+            }
+          ]
+        );
+        break;
+        
+      case "Show Interactions":
+        // Navigate to interactions screen
+        Alert.alert(
+          "Navigate to Interactions",
+          `Opening interactions for ${salesRep.name}`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Go to Interactions",
+              onPress: () => {
+                console.log(`Navigating to interactions for ${salesRep.name}`);
+                // Use the existing navigation function if available
+                if (typeof onNavigateToInteractions === 'function') {
+                  onNavigateToInteractions(salesRep.id, salesRep.name);
+                }
+              }
+            }
+          ]
+        );
         break;
         
       default:

@@ -412,9 +412,8 @@ export default function PaymentScreen() {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setExpandedId(expanded ? null : item.id);
                   }}
-                  onAction={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setOpenActionsId(openActionsId === item.id ? null : item.id);
+                  onAction={(payment, action) => {
+                    handlePaymentAction(payment, action);
                   }}
                 />
                 

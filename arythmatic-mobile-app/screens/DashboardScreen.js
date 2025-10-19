@@ -129,18 +129,24 @@ export default function DashboardScreen() {
 
         {/* Top Products */}
        <DashboardPanel
-  title="Recent Activity"
-  showAll={showAllActivities}
-  onToggle={toggleActivities}
+  title="Top Products"
+  showAll={showAllProducts}
+  onToggle={toggleProducts}
 >
-  {recentActivities.length === 0 && !loading ? (
-    <Text style={styles.noDataText}>No recent activity</Text>
+  {productPerformance.length === 0 && !loading ? (
+    <Text style={styles.noDataText}>No product data available</Text>
   ) : (
     <FlatList
-      data={showAllActivities ? recentActivities : recentActivities.slice(0, 8)}
-      renderItem={({ item }) => <ActivityItem activity={item} />} 
-      keyExtractor={(item) => item.id}
+      data={showAllProducts ? productPerformance : productPerformance.slice(0, 5)}
+      renderItem={({ item }) => (
+        <View style={styles.productCard}>
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productRevenue}>{item.revenue}</Text>
+        </View>
+      )}
+      keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
       scrollEnabled={false}
+      contentContainerStyle={styles.cardList}
     />
   )}
 </DashboardPanel>
@@ -229,5 +235,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  productCard: {
+    backgroundColor: colors.panel,
+    padding: 12,
+    marginVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  productName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  productRevenue: {
+    color: colors.primary,
+    fontSize: 12,
+    marginTop: 4,
   },
 });
