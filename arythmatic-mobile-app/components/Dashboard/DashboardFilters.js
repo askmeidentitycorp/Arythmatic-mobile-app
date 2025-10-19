@@ -30,6 +30,7 @@ const DashboardFilters = ({
           items={currencyItems}
           setOpen={setCurrencyOpen}
           setValue={setCurrency}
+          setItems={() => {}} // Prevent items from being modified
           style={styles.dropdown}
           textStyle={styles.dropdownText}
           dropDownContainerStyle={styles.dropdownContainer}
@@ -37,6 +38,9 @@ const DashboardFilters = ({
           zIndex={currencyOpen ? 2000 : 1}
           zIndexInverse={dateOpen ? 3000 : 2000}
           accessibilityLabel="Select currency"
+          multiple={false}
+          searchable={false}
+          closeAfterSelecting={true}
         />
       </View>
 
@@ -48,6 +52,7 @@ const DashboardFilters = ({
           items={dateItems}
           setOpen={setDateOpen}
           setValue={setDateRange}
+          setItems={() => {}} // Prevent items from being modified
           style={styles.dropdown}
           textStyle={styles.dropdownText}
           dropDownContainerStyle={styles.dropdownContainer}
@@ -55,6 +60,9 @@ const DashboardFilters = ({
           zIndex={dateOpen ? 2000 : 1}
           zIndexInverse={currencyOpen ? 3000 : 2000}
           accessibilityLabel="Select date range"
+          multiple={false}
+          searchable={false}
+          closeAfterSelecting={true}
         />
       </View>
 

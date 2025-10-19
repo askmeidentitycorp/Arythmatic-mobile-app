@@ -21,23 +21,23 @@ import RepCard from '../components/Dashboard/RepCard';
 import { useDashboard } from '../hooks/useDashboard';
 
 export default function DashboardScreen() {
-  // Currency dropdown
+  // Currency dropdown with unique keys
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [currency, setCurrency] = useState("USD");
   const [currencyItems] = useState([
-    { label: "INR (₹)", value: "INR" },
-    { label: "USD ($)", value: "USD" },
-    { label: "EUR (€)", value: "EUR" },
+    { label: "INR (₹)", value: "INR", key: "currency_inr" },
+    { label: "USD ($)", value: "USD", key: "currency_usd" },
+    { label: "EUR (€)", value: "EUR", key: "currency_eur" },
   ]);
 
-  // Date Range dropdown
+  // Date Range dropdown with unique keys
   const [dateOpen, setDateOpen] = useState(false);
   const [dateRange, setDateRange] = useState("This Month");
   const [dateItems] = useState([
-    { label: "This Week", value: "This Week" },
-    { label: "This Month", value: "This Month" },
-    { label: "This Quarter", value: "This Quarter" },
-    { label: "This Year", value: "This Year" },
+    { label: "This Week", value: "This Week", key: "date_week" },
+    { label: "This Month", value: "This Month", key: "date_month" },
+    { label: "This Quarter", value: "This Quarter", key: "date_quarter" },
+    { label: "This Year", value: "This Year", key: "date_year" },
   ]);
 
   // Expand states for "View All"
@@ -71,6 +71,17 @@ export default function DashboardScreen() {
     setShowAllReps(prev => !prev), []);
   const toggleActivities = useCallback(() =>
     setShowAllActivities(prev => !prev), []);
+
+  // Handle dropdown conflicts - close one when other opens
+  const handleCurrencyOpen = useCallback((open) => {
+    setCurrencyOpen(open);
+    if (open) setDateOpen(false);
+  }, []);
+  
+  const handleDateOpen = useCallback((open) => {
+    setDateOpen(open);
+    if (open) setCurrencyOpen(false);
+  }, []);
 
   // Update data when currency or date range changes
   useEffect(() => {
@@ -106,12 +117,12 @@ export default function DashboardScreen() {
           currency={currency}
           setCurrency={setCurrency}
           currencyOpen={currencyOpen}
-          setCurrencyOpen={setCurrencyOpen}
+          setCurrencyOpen={handleCurrencyOpen}
           currencyItems={currencyItems}
           dateRange={dateRange}
           setDateRange={setDateRange}
           dateOpen={dateOpen}
-          setDateOpen={setDateOpen}
+          setDateOpen={handleDateOpen}
           dateItems={dateItems}
           onRefresh={handleRefresh}
           loading={loading}
