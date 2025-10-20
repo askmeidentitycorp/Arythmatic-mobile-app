@@ -415,6 +415,7 @@ export default function PaymentScreen() {
                   onAction={(payment, action) => {
                     handlePaymentAction(payment, action);
                   }}
+                  onNavigateToDetails={onNavigateToDetails}
                 />
                 
                 {/* Actions Menu */}

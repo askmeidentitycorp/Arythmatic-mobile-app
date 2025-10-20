@@ -251,42 +251,32 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         
       case "Show Invoices":
         // Navigate to invoices screen with sales rep filter
-        Alert.alert(
-          "Navigate to Invoices",
-          `Opening invoices for ${salesRep.name}`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Go to Invoices",
-              onPress: () => {
-                // This would navigate to invoices screen
-                console.log(`Navigating to invoices for ${salesRep.name}`);
-                // navigation?.navigate('Invoices', { salesRepId: salesRep.id, salesRepName: salesRep.name });
-              }
-            }
-          ]
-        );
+        console.log(`Navigating to invoices for ${salesRep.name}`);
+        if (navigation?.navigate) {
+          navigation.navigate('Invoices', { 
+            filters: { 
+              salesRepId: salesRep.id, 
+              salesRepName: salesRep.name 
+            } 
+          });
+        } else {
+          Alert.alert("Navigation Error", "Navigation not available");
+        }
         break;
         
       case "Show Interactions":
         // Navigate to interactions screen
-        Alert.alert(
-          "Navigate to Interactions",
-          `Opening interactions for ${salesRep.name}`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Go to Interactions",
-              onPress: () => {
-                console.log(`Navigating to interactions for ${salesRep.name}`);
-                // Use the existing navigation function if available
-                if (typeof onNavigateToInteractions === 'function') {
-                  onNavigateToInteractions(salesRep.id, salesRep.name);
-                }
-              }
-            }
-          ]
-        );
+        console.log(`Navigating to interactions for ${salesRep.name}`);
+        if (typeof onNavigateToInteractions === 'function') {
+          onNavigateToInteractions(salesRep.id, salesRep.name);
+        } else if (navigation?.navigate) {
+          navigation.navigate('Interactions', { 
+            repId: salesRep.id, 
+            repName: salesRep.name 
+          });
+        } else {
+          Alert.alert("Navigation Error", "Navigation not available");
+        }
         break;
         
       default:

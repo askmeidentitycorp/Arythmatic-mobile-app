@@ -196,9 +196,33 @@ export default function InvoiceScreen() {
   const handleAction = async (invoice, action) => {
     switch (action) {
       case "View Details":
+        const lineItems = invoice.line_items || [];
+        const itemsText = lineItems.length > 0 
+          ? lineItems.map(item => `• ${item.name || item.product_name}: ${item.quantity || item.qty} x $${item.price || item.amount || 0}`).join('\n')
+          : 'No line items';
+        
+        const totalAmount = lineItems.reduce((sum, item) => sum + ((item.quantity || item.qty || 1) * (item.price || item.amount || 0)), 0);
+        
         Alert.alert(
-          "Invoice Details",
-          `Number: ${invoice.invoiceNumber || invoice.invoice_number}\nCustomer: ${invoice.customer || invoice.customer_details?.name}\nStatus: ${invoice.status}`
+          `Invoice #${invoice.invoiceNumber || invoice.invoice_number}`,
+          `Customer: ${invoice.customer || invoice.customer_details?.name || 'N/A'}\n` +
+          `Status: ${invoice.status || 'Unknown'}\n` +
+          `Currency: ${invoice.currency || 'USD'}\n` +
+          `Due Date: ${invoice.dueDate || invoice.due_date || 'N/A'}\n` +
+          `Payment Terms: ${invoice.paymentTerms || invoice.payment_terms || 'N/A'}\n` +
+          `Total Amount: $${totalAmount.toFixed(2)}\n\n` +
+          `Line Items:\n${itemsText}\n\n` +
+          `Notes: ${invoice.notes || 'No notes'}`,
+          [
+            { text: "OK", style: "default" },
+            { 
+              text: "View Payments", 
+              onPress: () => {
+                console.log(`Navigate to payments for invoice: ${invoice.invoiceNumber || invoice.invoice_number}`);
+                // Could navigate to payments screen with invoice filter
+              } 
+            }
+          ]
         );
         break;
 

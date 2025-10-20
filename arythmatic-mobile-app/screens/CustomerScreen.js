@@ -161,7 +161,13 @@ export default function CustomerScreen() {
         Alert.alert("View Orders", `Orders for ${customer.displayName} - Feature coming soon`);
         break;
       case "View Interactions":
-        Alert.alert("View Interactions", `Interactions for ${customer.displayName} - Feature coming soon`);
+        // Navigate to interactions screen with customer filter
+        console.log(`Navigating to interactions for customer: ${customer.displayName}`);
+        // For now, we'll show an alert since customer-based interaction filtering might need backend support
+        Alert.alert(
+          "View Interactions", 
+          `Would open interactions for ${customer.displayName}\n\n(Customer interaction filtering needs backend implementation)"
+        );
         break;
       case "Activate":
       case "Deactivate":

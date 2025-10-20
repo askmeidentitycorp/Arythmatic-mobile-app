@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-uses-react */
 import React, { useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "./constants/config";
 
@@ -27,6 +27,7 @@ export default function App() {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [navigationParams, setNavigationParams] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigationRef = useRef(null);
 
   console.log("✅ App.js mounted");
@@ -65,13 +66,64 @@ export default function App() {
     setSelectedPaymentId(null);
   };
 
-  // Create a navigation prop to pass to screens
+  // Enhanced navigation system for cross-screen navigation
+  const navigateToInvoices = (filters) => {
+    setCurrentScreen("Business");
+    setBusinessScreen("Invoices");
+    setNavigationParams({ filters });
+  };
+
+  const navigateToPayments = (filters) => {
+    setCurrentScreen("Business");
+    setBusinessScreen("Payments");
+    setNavigationParams({ filters });
+  };
+
+  const navigateToCustomers = (filters) => {
+    setCurrentScreen("Business");
+    setBusinessScreen("Customers");
+    setNavigationParams({ filters });
+  };
+
+  const navigateToProducts = (filters) => {
+    setCurrentScreen("Business");
+    setBusinessScreen("Products");
+    setNavigationParams({ filters });
+  };
+
+  // Create a comprehensive navigation prop to pass to screens
   const createNavigationProp = () => {
     return {
-      navigate: (screenName, params) => {
-        if (screenName === 'Interactions') {
-          navigateToInteractions(params.repId, params.repName);
+      navigate: (screenName, params = {}) => {
+        switch (screenName) {
+          case 'Interactions':
+            navigateToInteractions(params.repId, params.repName);
+            break;
+          case 'Invoices':
+            navigateToInvoices(params.filters);
+            break;
+          case 'Payments':
+            navigateToPayments(params.filters);
+            break;
+          case 'Customers':
+            navigateToCustomers(params.filters);
+            break;
+          case 'Products':
+            navigateToProducts(params.filters);
+            break;
+          case 'SalesReps':
+            setCurrentScreen("Business");
+            setBusinessScreen("SalesReps");
+            setNavigationParams(params.filters ? { filters: params.filters } : null);
+            break;
+          default:
+            console.log('Unknown screen:', screenName);
         }
+      },
+      goBack: () => {
+        // Default go back to SalesReps or previous screen
+        setBusinessScreen("SalesReps");
+        setNavigationParams(null);
       }
     };
   };
@@ -152,6 +204,15 @@ export default function App() {
           setBusinessScreen={setBusinessScreen}
         />
 
+        {/* Profile Menu Overlay */}
+        {showProfileMenu && (
+          <TouchableOpacity 
+            style={styles.profileOverlay} 
+            activeOpacity={1}
+            onPress={() => setShowProfileMenu(false)}
+          />
+        )}
+        
         {/* Main content */}
         <View style={{ flex: 1, backgroundColor: colors.bg }}>
           {/* Top Header Row */}
@@ -171,15 +232,73 @@ export default function App() {
               Home / {currentScreen === "Business" ? businessScreen : currentScreen}
             </Text>
 
-            {/* Profile Icon */}
-            <TouchableOpacity style={styles.profileBtn} onPress={() => {}}>
-              <Text style={styles.profileIcon}>👤</Text>
-            </TouchableOpacity>
+            {/* Profile & Logout */}
+            <View style={styles.profileContainer}>
+              <TouchableOpacity 
+                style={styles.profileBtn} 
+                onPress={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                <Text style={styles.profileIcon}>👤</Text>
+              </TouchableOpacity>
+              
+              {/* Profile Menu Dropdown */}
+              {showProfileMenu && (
+                <View style={styles.profileMenu}>
+                  <TouchableOpacity 
+                    style={styles.profileMenuItem}
+                    onPress={() => {
+                      setShowProfileMenu(false);
+                      Alert.alert("Profile", "Profile settings coming soon!");
+                    }}
+                  >
+                    <Text style={styles.profileMenuText}>👤 Profile</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.profileMenuItem}
+                    onPress={() => {
+                      setShowProfileMenu(false);
+                      Alert.alert("Settings", "Settings coming soon!");
+                    }}
+                  >
+                    <Text style={styles.profileMenuText}>⚙️ Settings</Text>
+                  </TouchableOpacity>
+                  
+                  <View style={styles.profileMenuDivider} />
+                  
+                  <TouchableOpacity 
+                    style={[styles.profileMenuItem, styles.logoutMenuItem]}
+                    onPress={() => {
+                      setShowProfileMenu(false);
+                      Alert.alert(
+                        "Logout",
+                        "Are you sure you want to logout?",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { 
+                            text: "Logout", 
+                            style: "destructive",
+                            onPress: () => {
+                              setLoggedIn(false);
+                              setCurrentScreen("Dashboard");
+                              setBusinessScreen("SalesReps");
+                              setMenuOpen(false);
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.logoutMenuText}>⏻ Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
 
           {/* Screen content */}
           <View style={{ flex: 1 }}>
-            {currentScreen === "Dashboard" && <DashboardScreen />}
+            {currentScreen === "Dashboard" && <DashboardScreen navigation={createNavigationProp()} />}
             {currentScreen === "Business" && businessScreen === "SalesReps" && (
               <SalesRepsScreen 
                 navigation={createNavigationProp()} 
@@ -187,10 +306,10 @@ export default function App() {
               />
             )}
             {currentScreen === "Business" && businessScreen === "Customers" && (
-              <CustomerScreen />
+              <CustomerScreen navigation={createNavigationProp()} />
             )}
             {currentScreen === "Business" && businessScreen === "Products" && (
-              <ProductsScreen />
+              <ProductsScreen navigation={createNavigationProp()} />
             )}
             {currentScreen === "Business" && businessScreen === "Interactions" && (
               <InteractionsScreen 
@@ -201,10 +320,15 @@ export default function App() {
               />
             )}
             {currentScreen === "Business" && businessScreen === "Invoices" && (
-              <InvoicesScreen />
+              <InvoicesScreen 
+                navigation={createNavigationProp()}
+                route={{ params: navigationParams }}
+              />
             )}
             {currentScreen === "Business" && businessScreen === "Payments" && (
               <PaymentsScreen 
+                navigation={createNavigationProp()}
+                route={{ params: navigationParams }}
                 onNavigateToDetails={navigateToPaymentDetails}
               />
             )}
@@ -249,6 +373,12 @@ const styles = StyleSheet.create({
     fontWeight: "600", 
     fontSize: 14 
   },
+  profileContainer: {
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 12,
+  },
   profileBtn: {
     width: 32,
     height: 32,
@@ -258,7 +388,55 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
-    marginLeft: 12,
   },
   profileIcon: { fontSize: 15, color: colors.text, fontWeight: "600" },
+  profileMenu: {
+    position: "absolute",
+    top: 40,
+    right: 0,
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    minWidth: 150,
+    zIndex: 1000,
+  },
+  profileMenuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border,
+  },
+  profileMenuText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: "500",
+  },
+  profileMenuDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 4,
+  },
+  logoutMenuItem: {
+    borderBottomWidth: 0,
+  },
+  logoutMenuText: {
+    fontSize: 14,
+    color: "#ff4444",
+    fontWeight: "600",
+  },
+  profileOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+    backgroundColor: "transparent",
+  },
 });

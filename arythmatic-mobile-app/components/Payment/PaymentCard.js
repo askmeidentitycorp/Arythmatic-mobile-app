@@ -20,7 +20,7 @@ const getStatusColor = (status) => {
   }
 };
 
-export default function PaymentCard({ payment, onAction, onToggle, expanded }) {
+export default function PaymentCard({ payment, onAction, onToggle, expanded, onNavigateToDetails }) {
   // Add safety checks for payment object
   if (!payment) {
     return null;
@@ -43,6 +43,9 @@ export default function PaymentCard({ payment, onAction, onToggle, expanded }) {
       
       {expanded && (
         <View style={styles.actions}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onNavigateToDetails?.(payment.id)}>
+            <Text style={styles.actionText}>View Details</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={() => onAction?.(payment, 'Edit')}>
             <Text style={styles.actionText}>Edit</Text>
           </TouchableOpacity>
