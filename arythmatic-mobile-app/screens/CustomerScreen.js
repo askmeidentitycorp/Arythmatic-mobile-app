@@ -161,13 +161,7 @@ export default function CustomerScreen() {
         Alert.alert("View Orders", `Orders for ${customer.displayName} - Feature coming soon`);
         break;
       case "View Interactions":
-        // Navigate to interactions screen with customer filter
-        console.log(`Navigating to interactions for customer: ${customer.displayName}`);
-        // For now, we'll show an alert since customer-based interaction filtering might need backend support
-        Alert.alert(
-          "View Interactions", 
-          `Would open interactions for ${customer.displayName}\n\n(Customer interaction filtering needs backend implementation)"
-        );
+        Alert.alert("View Interactions", `Interactions for ${customer.displayName} - Feature coming soon`);
         break;
       case "Activate":
       case "Deactivate":
@@ -349,8 +343,8 @@ export default function CustomerScreen() {
             <Text style={styles.customersSummaryDetail}>
               Last: {customers[customers.length - 1]?.displayName}
             </Text>
-        </View>
-      </ScrollView>
+          </View>
+        )}
       
       {/* CRUD Modal */}
       <CrudModal
@@ -365,6 +359,7 @@ export default function CustomerScreen() {
       />
     </View>
   );
+}
 }
 
 const styles = StyleSheet.create({

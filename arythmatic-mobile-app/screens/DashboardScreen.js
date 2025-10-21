@@ -88,12 +88,22 @@ export default function DashboardScreen() {
     console.log('📅 Analytics filters changed:', { currency, dateRange });
   }, [currency, dateRange]);
 
-  // Error state
-  if (error) {
+  // Error state - Show error but continue with available data
+  const showError = error && (!analyticsData || !kpis || kpis.length === 0);
+  
+  if (showError) {
     return (
       <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>
+          ⚠️ Dashboard Error
+        </Text>
         <Text style={styles.errorText}>
-          Error loading analytics dashboard: {error}
+          {error}
+        </Text>
+        <Text style={styles.errorSubtext}>
+          {error.includes('HTTP 500') 
+            ? 'The server is experiencing issues. Sample data is shown below.' 
+            : 'Please check your connection and try again.'}
         </Text>
       </View>
     );
@@ -129,6 +139,21 @@ export default function DashboardScreen() {
         />
 
         {/* Content */}
+        {/* Error Banner - Show if there's an error but we have data */}
+        {error && analyticsData && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerIcon}>⚠️</Text>
+            <View style={styles.errorBannerContent}>
+              <Text style={styles.errorBannerTitle}>Data Loading Issue</Text>
+              <Text style={styles.errorBannerText}>
+                {error.includes('HTTP 500') 
+                  ? 'Using sample data due to server issues'
+                  : 'Some data may be outdated'}
+              </Text>
+            </View>
+          </View>
+        )}
+        
         {/* KPIs */}
         <DashboardKPIs kpis={kpis} loading={loading} />
 
@@ -233,10 +258,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingHorizontal: 20,
   },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.error || '#F16364',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   errorText: {
     fontSize: 16,
     color: colors.error || '#F16364',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: colors.subtext,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  errorBanner: {
+    backgroundColor: colors.warn + '20' || '#F0B42920',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warn || '#F0B429',
+  },
+  errorBannerIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  errorBannerContent: {
+    flex: 1,
+  },
+  errorBannerTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  errorBannerText: {
+    fontSize: 12,
+    color: colors.subtext,
   },
   cardList: {
     paddingBottom: 8,

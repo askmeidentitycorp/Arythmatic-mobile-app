@@ -25,7 +25,7 @@ import {
   useSalesReps
 } from '../hooks/useSalesReps';
 
-export default function SalesRepsScreen({ navigation, onNavigateToInteractions }) {
+export default function SalesRepsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -232,51 +232,6 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         setSelectedSalesRep(salesRep);
         setModalMode('edit');
         setModalVisible(true);
-        break;
-        
-      case "View Details":
-        Alert.alert(
-          `${salesRep.name} Details`,
-          `Email: ${salesRep.email}\nRole: ${salesRep.role}\nStatus: ${salesRep.status}\nPhone: ${salesRep.phone || 'N/A'}`
-        );
-        break;
-        
-      case "View Performance":
-        // Navigate to performance view or show performance data
-        Alert.alert(
-          "Performance Data",
-          `${salesRep.name}\n\nSales: $${Math.floor(Math.random() * 50000)}\nDeals: ${Math.floor(Math.random() * 20)}\nConversion: ${Math.floor(Math.random() * 30) + 10}%`
-        );
-        break;
-        
-      case "Show Invoices":
-        // Navigate to invoices screen with sales rep filter
-        console.log(`Navigating to invoices for ${salesRep.name}`);
-        if (navigation?.navigate) {
-          navigation.navigate('Invoices', { 
-            filters: { 
-              salesRepId: salesRep.id, 
-              salesRepName: salesRep.name 
-            } 
-          });
-        } else {
-          Alert.alert("Navigation Error", "Navigation not available");
-        }
-        break;
-        
-      case "Show Interactions":
-        // Navigate to interactions screen
-        console.log(`Navigating to interactions for ${salesRep.name}`);
-        if (typeof onNavigateToInteractions === 'function') {
-          onNavigateToInteractions(salesRep.id, salesRep.name);
-        } else if (navigation?.navigate) {
-          navigation.navigate('Interactions', { 
-            repId: salesRep.id, 
-            repName: salesRep.name 
-          });
-        } else {
-          Alert.alert("Navigation Error", "Navigation not available");
-        }
         break;
         
       default:
