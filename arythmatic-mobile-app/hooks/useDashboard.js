@@ -387,7 +387,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     }));
   }, [analyticsData, getRelativeTime]);
 
-  // FIXED: Fetch analytics data with proper currency parameter handling
+  // FIXED: Fetch analytics data with graceful error handling
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -403,14 +403,43 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       };
       
       console.log('📡 FIXED API params:', params);
+      console.log('🔄 Attempting to fetch dashboard data...');
+      
       const data = await dashboardService.getAllDashboardData(params);
       
       console.log('🔥 FIXED Raw Analytics Data:', data);
       console.log('💰 Revenue data structure:', data.revenue);
+      
+      // Validate that we have some data
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid data received from API');
+      }
+      
       setAnalyticsData(data);
+      console.log('✅ Dashboard data loaded successfully');
+      
     } catch(err) {
       console.error('❌ Dashboard fetch error:', err);
-      setError(err.message || 'Failed to load dashboard data');
+      console.error('🔍 Error details:', err.stack);
+      
+      // Set a user-friendly error message
+      const errorMessage = err.message.includes('HTTP 500') 
+        ? 'Server error occurred. Using sample data for demonstration.'
+        : err.message.includes('Network') 
+        ? 'Network connection issue. Please check your internet connection.'
+        : err.message || 'Failed to load dashboard data';
+      
+      setError(errorMessage);
+      
+      // Don't leave the user with a broken dashboard - provide fallback data
+      console.log('🔄 Loading fallback dashboard data...');
+      try {
+        const fallbackData = dashboardService.getCompleteFallbackData();
+        setAnalyticsData(fallbackData);
+        console.log('✅ Fallback data loaded successfully');
+      } catch (fallbackError) {
+        console.error('❌ Even fallback data failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }

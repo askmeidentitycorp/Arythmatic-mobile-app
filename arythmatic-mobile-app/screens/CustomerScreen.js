@@ -343,8 +343,8 @@ export default function CustomerScreen() {
             <Text style={styles.customersSummaryDetail}>
               Last: {customers[customers.length - 1]?.displayName}
             </Text>
-        </View>
-      </ScrollView>
+          </View>
+        )}
       
       {/* CRUD Modal */}
       <CrudModal
