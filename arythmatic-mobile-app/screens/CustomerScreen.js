@@ -52,7 +52,7 @@ export default function CustomerScreen() {
     refresh,
     goToPage,
     hasMore
-  } = useCustomers(searchParams, 20, true);
+  } = useCustomers(searchParams, 20, true); // Keep nested=true for customer relationships
 
   const {
     createCustomer,

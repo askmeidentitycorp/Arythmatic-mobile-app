@@ -26,9 +26,17 @@ export const useCustomers = (params = {}, pageSize = 20, useNested = true) => {
       const requestParams = {
         page,
         page_size: 20,
-        limit: 20,
         ...params,
       };
+      
+      // DEBUG: Log all request details
+      console.log('🐛 DEBUG useCustomers:', {
+        hook: 'useCustomers',
+        useNested,
+        endpoint: useNested ? 'customers-nested' : 'customers',
+        requestParams,
+        paramsStringified: JSON.stringify(params)
+      });
 
       console.log('🔍 Fetching customers with params:', requestParams);
 

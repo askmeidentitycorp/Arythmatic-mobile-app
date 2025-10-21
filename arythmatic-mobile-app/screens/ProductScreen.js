@@ -69,7 +69,7 @@ export default function ProductScreen() {
     pagination,
     refresh,
     goToPage,
-  } = useProducts(searchParams, 20, true); // useNested = true
+  } = useProducts(searchParams, 20, false); // Use simple data for product list - faster loading
 
   const {
     createProduct,

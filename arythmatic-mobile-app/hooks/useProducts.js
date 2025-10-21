@@ -26,6 +26,15 @@ export const useProducts = (params = {}, pageSize = 20, useNested = true) => {
         page_size: pageSize,
         ...params,
       };
+      
+      // DEBUG: Log all request details
+      console.log('🐛 DEBUG useProducts:', {
+        hook: 'useProducts',
+        useNested,
+        endpoint: useNested ? 'products-nested' : 'products',
+        requestParams,
+        paramsStringified: JSON.stringify(params)
+      });
 
       console.log('🔍 Fetching products with params:', requestParams);
 
