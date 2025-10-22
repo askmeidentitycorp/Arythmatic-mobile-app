@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-uses-react */
 import React, { useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "./constants/config";
 
@@ -249,24 +249,24 @@ export default function App() {
 const styles = StyleSheet.create({
   contentHeader: {
     paddingTop: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: colors.bg,
     borderBottomWidth: 1,
     borderColor: colors.border,
-    height: 60,
-    minHeight: 60,
+    height: Platform.OS === 'web' ? 56 : 70,
+    minHeight: Platform.OS === 'web' ? 56 : 70,
   },
   menuButton: {
     marginRight: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'web' ? 8 : 14,
+    paddingHorizontal: Platform.OS === 'web' ? 12 : 18,
     backgroundColor: colors.primary,
     borderRadius: 8,
-    minWidth: 48,
-    minHeight: 44,
+    minWidth: Platform.OS === 'web' ? 44 : 54,
+    minHeight: Platform.OS === 'web' ? 40 : 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -288,10 +288,10 @@ const styles = StyleSheet.create({
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: Platform.OS === 'web' ? 12 : 8,
   },
   userInfo: {
-    marginRight: 8,
+    marginRight: Platform.OS === 'web' ? 8 : 12,
     alignItems: 'flex-end',
   },
   userName: {
@@ -304,16 +304,16 @@ const styles = StyleSheet.create({
     color: colors.subtext,
   },
   profileBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: Platform.OS === 'web' ? 40 : 50,
+    height: Platform.OS === 'web' ? 40 : 50,
+    borderRadius: Platform.OS === 'web' ? 20 : 25,
     backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: Platform.OS === 'web' ? 40 : 50,
+    minHeight: Platform.OS === 'web' ? 40 : 50,
   },
   profileIcon: { fontSize: 12, color: colors.text, fontWeight: "600", letterSpacing: 1 },
 });
