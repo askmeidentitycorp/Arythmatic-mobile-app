@@ -22,6 +22,7 @@ const SimplePicker = ({ label, value, items, onValueChange, selectedKey }) => {
         transparent
         animationType="slide"
         onRequestClose={() => setShowModal(false)}
+        presentationStyle="overFullScreen"
       >
         <TouchableOpacity 
           style={styles.modalOverlay} 
@@ -148,16 +149,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    padding: 20,
+    paddingBottom: 0,
   },
   modalContent: {
     backgroundColor: colors.bg,
-    borderRadius: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     width: '100%',
-    maxWidth: 300,
-    maxHeight: '80%',
+    maxHeight: '70%',
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',

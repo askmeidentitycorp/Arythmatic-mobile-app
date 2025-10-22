@@ -73,12 +73,12 @@ export function usePaymentAnalytics(filters = {}) {
 
   // Format the analytics data for display
   const formattedAnalytics = {
-    totalPayments: analytics.totalPayments,
-    totalValue: `$${analytics.totalValue.toFixed(2)}`,
-    successful: `$${analytics.successful.toFixed(2)}`,
-    failed: `$${analytics.failed.toFixed(2)}`,
-    pending: `$${analytics.pending.toFixed(2)}`,
-    overdue: analytics.overdue,
+    totalPayments: analytics.totalPayments || 0,
+    totalValue: `$${(analytics.totalValue || 0).toFixed(2)}`,
+    successful: `$${(analytics.successful || 0).toFixed(2)}`,
+    failed: `$${(analytics.failed || 0).toFixed(2)}`,
+    pending: `$${(analytics.pending || 0).toFixed(2)}`,
+    overdue: analytics.overdue || 0,
   };
 
   return {
