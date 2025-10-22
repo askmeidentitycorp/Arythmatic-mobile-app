@@ -49,7 +49,7 @@ export default function LoginScreen() {
 
     try {
       clearError();
-      await signIn({ email: email.trim(), password });
+      await signIn({ username: email.trim(), password });
       // Navigation will be handled by App.js based on auth state
     } catch (error) {
       Alert.alert('Login Failed', error.message);

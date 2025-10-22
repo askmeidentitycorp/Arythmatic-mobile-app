@@ -47,6 +47,7 @@ export const TEST_CONFIG = {
     { username: 'test@test.com', password: 'password123' },
     { username: 'admin@test.com', password: 'admin123' },
     { username: 'demo@demo.com', password: 'demo123' },
+    { username: 'user@example.com', password: 'user123' },
   ],
 };
 

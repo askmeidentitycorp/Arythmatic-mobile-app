@@ -33,6 +33,14 @@ const MOCK_USERS = {
     roles: ['user'],
     avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=F4B740&color=fff',
   },
+  'user@example.com': {
+    id: '4',
+    email: 'user@example.com',
+    name: 'Example User',
+    displayName: 'Example User',
+    roles: ['user'],
+    avatar: 'https://ui-avatars.com/api/?name=Example+User&background=9C27B0&color=fff',
+  },
 };
 
 // Generate mock JWT token
