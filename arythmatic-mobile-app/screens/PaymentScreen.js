@@ -178,40 +178,56 @@ const PaymentCard = React.memo(({ payment, onNext, onRepay }) => {
   return (
     <View style={styles.paymentCard}>
       <View style={styles.paymentHeader}>
-        <Text style={styles.paymentId}>{payment.id}</Text>
-        <TouchableOpacity 
-          style={styles.nextButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onNext && onNext(payment);
-          }}
-        >
-          <Text style={styles.nextButtonText}>Next ›</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.paymentDetails}>
-        <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
-        <Text style={styles.paymentDate}>{payment.date}</Text>
-        <Text style={styles.paymentMethod}>{payment.method}</Text>
-        <Text style={styles.paymentCustomer}>{payment.customerName}</Text>
-        <Text style={styles.paymentInvoice}>{payment.invoice}</Text>
-        
-        <View style={styles.paymentActions}>
-          {payment.isOverdue && (
-            <TouchableOpacity 
-              style={styles.repayButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                onRepay && onRepay(payment);
-              }}
-            >
-              <Text style={styles.repayButtonText}>去还款</Text>
-            </TouchableOpacity>
-          )}
-          
+        <View style={styles.paymentHeaderLeft}>
+          <Text style={styles.paymentId}>{payment.id}</Text>
+          <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
+        </View>
+        <View style={styles.paymentHeaderRight}>
           <StatusBadge status={payment.isOverdue ? "Overdue" : payment.status} />
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onNext && onNext(payment);
+            }}
+          >
+            <Text style={styles.moreButtonText}>⋮</Text>
+          </TouchableOpacity>
         </View>
       </View>
+      
+      <View style={styles.paymentInfo}>
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>Customer:</Text>
+          <Text style={styles.paymentValue}>{payment.customerName}</Text>
+        </View>
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>Method:</Text>
+          <Text style={styles.paymentValue}>{payment.method}</Text>
+        </View>
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>Date:</Text>
+          <Text style={styles.paymentValue}>{payment.date}</Text>
+        </View>
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>Invoice:</Text>
+          <Text style={styles.paymentValue}>{payment.invoice}</Text>
+        </View>
+      </View>
+      
+      {payment.isOverdue && (
+        <View style={styles.paymentFooter}>
+          <TouchableOpacity 
+            style={styles.repayButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onRepay && onRepay(payment);
+            }}
+          >
+            <Text style={styles.repayButtonText}>Process Payment</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 });
@@ -472,16 +488,16 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => navigation?.navigate?.('Interactions') || console.log('Navigate to Interactions')}
+              style={styles.exportButton} 
+              onPress={() => console.log('Export payments')}
             >
-              <Text style={styles.actionButtonText}>Interactions</Text>
+              <Text style={styles.exportButtonText}>📤 Export</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => navigation?.navigate?.('Invoices') || console.log('Navigate to Invoices')}
+              style={styles.recordButton} 
+              onPress={() => console.log('Record new payment')}
             >
-              <Text style={styles.actionButtonText}>Invoices</Text>
+              <Text style={styles.recordButtonText}>+ Record Payment</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.filterButton} 
@@ -518,6 +534,27 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               <KPI label="Total Value" value={metrics.totalValue} color="#6B9AFF" />
               <KPI label="Successful" value={metrics.successful} color="#31C76A" />
               <KPI label="Failed/Voided" value={metrics.failed} color="#EA4335" />
+            </View>
+
+            {/* Currency Breakdown */}
+            <Text style={styles.currencyBreakdownTitle}>Currency Breakdown</Text>
+            <View style={styles.currencyBreakdown}>
+              <View style={styles.currencyCard}>
+                <Text style={styles.currencyLabel}>INR</Text>
+                <View style={styles.currencyAmounts}>
+                  <Text style={styles.currencyAmount}>₹12,500.00</Text>
+                  <Text style={styles.currencySubtext}>Pending: ₹1,200.00</Text>
+                  <Text style={styles.currencySubtext}>Failed: ₹300.00</Text>
+                </View>
+              </View>
+              <View style={styles.currencyCard}>
+                <Text style={styles.currencyLabel}>USD</Text>
+                <View style={styles.currencyAmounts}>
+                  <Text style={styles.currencyAmount}>$429.00</Text>
+                  <Text style={styles.currencySubtext}>Pending: $50.00</Text>
+                  <Text style={styles.currencySubtext}>Failed: $9.00</Text>
+                </View>
+              </View>
             </View>
           </>
         )}
@@ -668,16 +705,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  actionButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: Platform.OS === 'web' ? 10 : 8,
-    paddingVertical: Platform.OS === 'web' ? 6 : 5,
+  exportButton: {
+    backgroundColor: colors.panel,
+    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
+    paddingVertical: Platform.OS === 'web' ? 8 : 6,
     borderRadius: 6,
-    minHeight: 32,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 36,
     justifyContent: 'center',
-    marginRight: 4,
+    marginRight: 6,
   },
-  actionButtonText: {
+  exportButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: Platform.OS === 'web' ? 12 : 11,
+  },
+  recordButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
+    paddingVertical: Platform.OS === 'web' ? 8 : 6,
+    borderRadius: 6,
+    minHeight: 36,
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  recordButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: Platform.OS === 'web' ? 12 : 11,
@@ -808,22 +861,70 @@ const styles = StyleSheet.create({
   paymentHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  paymentHeaderLeft: {
+    flex: 1,
+  },
+  paymentHeaderRight: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    gap: 8,
   },
   paymentId: {
     color: colors.text,
     fontWeight: "700",
     fontSize: 16,
-  },
-  paymentDetails: {
-    marginTop: 5,
+    marginBottom: 4,
   },
   paymentAmount: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  moreButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  moreButtonText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  paymentInfo: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  paymentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  paymentLabel: {
+    color: colors.subtext,
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
+  },
+  paymentValue: {
+    color: colors.text,
+    fontSize: 14,
     fontWeight: "600",
-    marginBottom: 4,
+    flex: 2,
+    textAlign: "right",
+  },
+  paymentFooter: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    alignItems: "center",
   },
   paymentDate: {
     color: colors.text,
@@ -852,14 +953,16 @@ const styles = StyleSheet.create({
   },
   repayButton: {
     backgroundColor: colors.primary,
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    minWidth: 140,
   },
   repayButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+    textAlign: 'center',
   },
   nextButton: {
     backgroundColor: colors.primary,
@@ -1049,6 +1152,46 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 8,
     paddingHorizontal: 4,
+  },
+  currencyBreakdownTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  currencyBreakdown: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 12,
+  },
+  currencyCard: {
+    flex: 1,
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  currencyAmounts: {
+    gap: 4,
+  },
+  currencyAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  currencySubtext: {
+    fontSize: 12,
+    color: colors.subtext,
   },
 
   // Loading Container
