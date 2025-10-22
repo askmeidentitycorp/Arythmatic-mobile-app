@@ -183,7 +183,7 @@ const AppContent = () => {
                 <Text style={styles.userProvider}>{isTestMode ? 'Test' : isMSAL ? 'MSAL' : 'Auth'}</Text>
               </View>
               <TouchableOpacity style={styles.profileBtn} onPress={signOut}>
-                <Text style={styles.profileIcon}>●●●</Text>
+                <Text style={styles.profileIcon}>👤</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -315,5 +315,5 @@ const styles = StyleSheet.create({
     minWidth: Platform.OS === 'web' ? 40 : 50,
     minHeight: Platform.OS === 'web' ? 40 : 50,
   },
-  profileIcon: { fontSize: 12, color: colors.text, fontWeight: "600", letterSpacing: 1 },
+  profileIcon: { fontSize: Platform.OS === 'web' ? 18 : 22, color: colors.text, fontWeight: "600" },
 });
