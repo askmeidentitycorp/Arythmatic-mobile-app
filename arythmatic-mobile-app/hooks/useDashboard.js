@@ -79,39 +79,41 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     const revenue = analyticsData.revenue || {};
     const interactions = overview.metrics?.interactions || {};
 
-    // ENHANCED: Get revenue with currency conversion like web dashboard
+    // FIXED: Calculate total revenue by summing ALL currencies and converting to selected currency
     let totalRevenue = 0;
     let totalSales = 0;
     let isConverted = false;
     
     if (revenue.summary_by_currency) {
-      // Try to get data for selected currency first
-      const currencyData = revenue.summary_by_currency[currency.toUpperCase()];
-      if (currencyData) {
-        totalRevenue = currencyData.total_revenue || 0;
-        totalSales = currencyData.sales_count || 0;
-      } else {
-        // If selected currency not available, convert from available currencies
-        const availableCurrencies = Object.keys(revenue.summary_by_currency);
-        if (availableCurrencies.length > 0) {
-          let convertedRevenue = 0;
-          let totalSalesFromAll = 0;
+      // ALWAYS sum all currencies and convert to selected currency (like web dashboard)
+      const availableCurrencies = Object.keys(revenue.summary_by_currency);
+      if (availableCurrencies.length > 0) {
+        let convertedRevenue = 0;
+        let totalSalesFromAll = 0;
+        
+        console.log('💰 FIXED: Converting all currencies to', currency.toUpperCase());
+        
+        availableCurrencies.forEach(fromCurrency => {
+          const currData = revenue.summary_by_currency[fromCurrency];
+          const amount = currData.total_revenue || 0;
+          const sales = currData.sales_count || 0;
           
-          availableCurrencies.forEach(fromCurrency => {
-            const currData = revenue.summary_by_currency[fromCurrency];
-            const amount = currData.total_revenue || 0;
-            const sales = currData.sales_count || 0;
-            
-            // Convert to selected currency
-            const rate = exchangeRates[fromCurrency]?.[currency.toUpperCase()] || 1;
-            convertedRevenue += amount * rate;
-            totalSalesFromAll += sales;
-          });
+          console.log(`💱 Converting ${fromCurrency} ${amount} to ${currency.toUpperCase()}`);
           
-          totalRevenue = convertedRevenue;
-          totalSales = totalSalesFromAll;
-          isConverted = true;
-        }
+          // Convert to selected currency
+          const rate = exchangeRates[fromCurrency]?.[currency.toUpperCase()] || 1;
+          const convertedAmount = amount * rate;
+          convertedRevenue += convertedAmount;
+          totalSalesFromAll += sales;
+          
+          console.log(`💱 ${fromCurrency} ${amount} × ${rate} = ${convertedAmount} ${currency.toUpperCase()}`);
+        });
+        
+        totalRevenue = convertedRevenue;
+        totalSales = totalSalesFromAll;
+        isConverted = availableCurrencies.length > 1 || !availableCurrencies.includes(currency.toUpperCase());
+        
+        console.log(`💰 FIXED Total Revenue: ${totalRevenue} ${currency.toUpperCase()} (converted from ${availableCurrencies.length} currencies)`);
       }
     } else {
       // Fallback to old structure

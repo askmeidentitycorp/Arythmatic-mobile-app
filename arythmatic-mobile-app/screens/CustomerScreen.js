@@ -19,7 +19,7 @@ import CrudModal from '../components/CrudModal';
 import { colors } from '../constants/config';
 import { useCustomerMutations, useCustomers } from '../hooks/useCustomers';
 
-export default function CustomerScreen() {
+export default function CustomerScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -267,6 +267,15 @@ export default function CustomerScreen() {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
+        {/* Header with Back Button */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+          >
+            <Text style={styles.backButtonText}>‹ Back</Text>
+          </TouchableOpacity>
+        </View>
         <CustomerHeader onAddCustomer={handleAddCustomer} />
         
         {/* SIMPLE PAGINATION INFO */}
@@ -366,6 +375,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  backButton: {
+    backgroundColor: colors.panel,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 16,
   },
   scrollContainer: {
     padding: 16,

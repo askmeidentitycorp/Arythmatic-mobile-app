@@ -24,7 +24,7 @@ import {
   useProducts
 } from '../hooks/useProducts';
 
-export default function ProductScreen() {
+export default function ProductScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     productType: '',
@@ -264,6 +264,15 @@ export default function ProductScreen() {
   return (
     <View style={styles.container}>
       <ScrollView>
+        {/* Header with Back Button */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+          >
+            <Text style={styles.backButtonText}>‹ Back</Text>
+          </TouchableOpacity>
+        </View>
         {/* Header */}
         <ProductHeader onAddPress={handleAddProduct} />
 
@@ -325,6 +334,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
     paddingHorizontal: 12
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  backButton: {
+    backgroundColor: colors.panel,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 16,
   },
   centerContainer: {
     justifyContent: 'center',
