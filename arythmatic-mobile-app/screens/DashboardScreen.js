@@ -4,12 +4,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 
 // Import hooks and components

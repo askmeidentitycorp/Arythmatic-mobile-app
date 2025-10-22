@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-uses-react */
 import React, { useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Platform, Modal, Dimensions } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "./constants/config";
 
@@ -31,13 +31,17 @@ const AppContent = () => {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [navigationParams, setNavigationParams] = useState(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [navigationContext, setNavigationContext] = useState(null); // Track where we came from
   const navigationRef = useRef(null);
 
   console.log("✅ App.js mounted with auth user:", user?.email);
 
   // Function to navigate to Interactions
-  const navigateToInteractions = (repId, repName) => {
+  const navigateToInteractions = (repId, repName, fromScreen = null) => {
     setNavigationParams({ repId, repName });
+    setNavigationContext(fromScreen ? { from: fromScreen, type: 'action' } : null);
+    setCurrentScreen("Business");
     setBusinessScreen("Interactions");
   };
 
@@ -45,6 +49,27 @@ const AppContent = () => {
   const navigateBackToSalesReps = () => {
     setBusinessScreen("SalesReps");
     setNavigationParams(null);
+    setNavigationContext(null);
+  };
+
+  // Function to navigate to Invoices with context
+  const navigateToInvoices = (salesRepId, salesRepName, fromScreen = null) => {
+    setNavigationParams({ salesRepId, salesRepName });
+    setNavigationContext(fromScreen ? { from: fromScreen, type: 'action' } : null);
+    setCurrentScreen("Business");
+    setBusinessScreen("Invoices");
+  };
+
+  // Function to navigate back from context
+  const navigateBackFromContext = () => {
+    if (navigationContext?.from === 'SalesReps') {
+      navigateBackToSalesReps();
+    } else {
+      // Default back behavior
+      setCurrentScreen('Dashboard');
+      setNavigationContext(null);
+      setNavigationParams(null);
+    }
   };
 
   // Function to navigate to Payment Details
@@ -65,19 +90,26 @@ const AppContent = () => {
     return {
       navigate: (targetScreen, params) => {
         if (targetScreen === 'Interactions') {
-          navigateToInteractions(params.repId, params.repName);
+          navigateToInteractions(params.repId, params.repName, params.from);
+        } else if (targetScreen === 'Invoices') {
+          navigateToInvoices(params.salesRepId, params.salesRepName, params.from);
         }
       },
       goBack: () => {
-        // Handle navigation back based on current screen
-        if (currentScreen === 'Business') {
+        // Handle navigation back based on current screen and context
+        if (navigationContext) {
+          navigateBackFromContext();
+        } else if (currentScreen === 'Business') {
           if (businessScreen === 'Interactions') {
             navigateBackToSalesReps();
           } else {
             setCurrentScreen('Dashboard');
           }
         }
-      }
+      },
+      // Helper methods for action-based navigation
+      navigateToInteractions: (repId, repName) => navigateToInteractions(repId, repName, screenName),
+      navigateToInvoices: (salesRepId, salesRepName) => navigateToInvoices(salesRepId, salesRepName, screenName)
     };
   };
 
@@ -86,6 +118,22 @@ const AppContent = () => {
     return {
       goBack: navigateBackFromPaymentDetails
     };
+  };
+
+  // Handle profile button press
+  const handleProfilePress = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setShowProfileDropdown(false);
+    signOut();
+  };
+
+  // Close dropdown when clicking outside
+  const closeProfileDropdown = () => {
+    setShowProfileDropdown(false);
   };
 
   // If we're showing payment details, render that screen
@@ -118,7 +166,11 @@ const AppContent = () => {
               </TouchableOpacity>
 
               {/* Breadcrumb */}
-              <Text style={styles.breadcrumb}>
+              <Text 
+                style={styles.breadcrumb}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 Home / {currentScreen === "Business" ? businessScreen : currentScreen} / Payment Details
               </Text>
 
@@ -139,6 +191,38 @@ const AppContent = () => {
               />
             </View>
           </View>
+          
+          {/* Profile Dropdown Overlay */}
+          {showProfileDropdown && (
+            <Modal
+              transparent
+              visible={showProfileDropdown}
+              onRequestClose={closeProfileDropdown}
+              animationType="fade"
+            >
+              <TouchableOpacity 
+                style={styles.modalOverlay} 
+                onPress={closeProfileDropdown}
+                activeOpacity={1}
+              >
+                <View style={styles.profileModal}>
+                  <View style={styles.profileModalContent}>
+                    <View style={styles.userInfoModal}>
+                      <Text style={styles.userNameModal} numberOfLines={1}>
+                        {user?.name || user?.email || 'User'}
+                      </Text>
+                      <Text style={styles.userRoleModal}>
+                        {isTestMode ? 'Test Mode' : isMSAL ? 'MSAL Auth' : 'Authenticated'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity style={styles.logoutButtonModal} onPress={handleLogout}>
+                      <Text style={styles.logoutButtonTextModal}>🚪 Logout</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          )}
         </View>
       </SafeAreaProvider>
     );
@@ -172,20 +256,18 @@ const AppContent = () => {
             </TouchableOpacity>
 
             {/* Breadcrumb */}
-            <Text style={styles.breadcrumb}>
+            <Text 
+              style={styles.breadcrumb}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               Home / {currentScreen === "Business" ? businessScreen : currentScreen}
             </Text>
 
-            {/* User Profile & Logout */}
-            <View style={styles.userSection}>
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user?.name || user?.email}</Text>
-                <Text style={styles.userProvider}>{isTestMode ? 'Test' : isMSAL ? 'MSAL' : 'Auth'}</Text>
-              </View>
-              <TouchableOpacity style={styles.profileBtn} onPress={signOut}>
-                <Text style={styles.profileIcon}>👤</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Profile Icon */}
+            <TouchableOpacity style={styles.profileBtn} onPress={handleProfilePress}>
+              <Text style={styles.profileIcon}>👤</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Screen content */}
@@ -209,15 +291,23 @@ const AppContent = () => {
             )}
             {currentScreen === "Business" && businessScreen === "Interactions" && (
               <InteractionsScreen 
-                navigation={createNavigationProp('Interactions')}
-                onBack={navigateBackToSalesReps}
+                navigation={{
+                  ...createNavigationProp('Interactions'),
+                  params: navigationParams,
+                  backToScreen: navigationContext?.from
+                }}
+                onBack={navigationContext?.from ? navigateBackFromContext : navigateBackToSalesReps}
                 initialRepId={navigationParams?.repId}
                 initialRepName={navigationParams?.repName}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Invoices" && (
               <InvoicesScreen 
-                navigation={createNavigationProp('Invoices')}
+                navigation={{
+                  ...createNavigationProp('Invoices'),
+                  params: navigationParams,
+                  backToScreen: navigationContext?.from
+                }}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Payments" && (
@@ -228,6 +318,38 @@ const AppContent = () => {
             )}
           </View>
         </View>
+        
+        {/* Profile Dropdown Overlay */}
+        {showProfileDropdown && (
+          <Modal
+            transparent
+            visible={showProfileDropdown}
+            onRequestClose={closeProfileDropdown}
+            animationType="fade"
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay} 
+              onPress={closeProfileDropdown}
+              activeOpacity={1}
+            >
+              <View style={styles.profileModal}>
+                <View style={styles.profileModalContent}>
+                  <View style={styles.userInfoModal}>
+                    <Text style={styles.userNameModal} numberOfLines={1}>
+                      {user?.name || user?.email || 'User'}
+                    </Text>
+                    <Text style={styles.userRoleModal}>
+                      {isTestMode ? 'Test Mode' : isMSAL ? 'MSAL Auth' : 'Authenticated'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.logoutButtonModal} onPress={handleLogout}>
+                    <Text style={styles.logoutButtonTextModal}>🚪 Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        )}
       </View>
     </SafeAreaProvider>
   );
@@ -246,74 +368,126 @@ export default function App() {
   );
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   contentHeader: {
-    paddingTop: 0,
-    paddingHorizontal: Platform.OS === 'web' ? 16 : 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: colors.bg,
     borderBottomWidth: 1,
     borderColor: colors.border,
-    height: Platform.OS === 'web' ? 56 : 70,
-    minHeight: Platform.OS === 'web' ? 56 : 70,
+    height: 80,
+    minHeight: 80,
+    maxWidth: screenWidth,
+    overflow: 'hidden',
   },
   menuButton: {
-    marginRight: 12,
-    paddingVertical: Platform.OS === 'web' ? 8 : 14,
-    paddingHorizontal: Platform.OS === 'web' ? 12 : 18,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: colors.primary,
-    borderRadius: 8,
-    minWidth: Platform.OS === 'web' ? 44 : 54,
-    minHeight: Platform.OS === 'web' ? 40 : 50,
+    borderRadius: 6,
+    marginRight: 8,
+    minWidth: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  breadcrumb: { color: "#fff", fontSize: 14, fontWeight: "600", flex: 1, marginHorizontal: 8 },
+  menuButtonText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 14 
+  },
+  breadcrumb: { 
+    color: colors.text, 
+    fontSize: 13, 
+    fontWeight: "500", 
+    flex: 1,
+    marginHorizontal: 8,
+    textAlign: 'left',
+  },
   backButton: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     backgroundColor: colors.panel,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 8,
   },
   backButtonText: { 
     color: colors.text, 
     fontWeight: "600", 
-    fontSize: 14 
-  },
-  userSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: Platform.OS === 'web' ? 12 : 8,
-  },
-  userInfo: {
-    marginRight: Platform.OS === 'web' ? 8 : 12,
-    alignItems: 'flex-end',
-  },
-  userName: {
-    fontSize: 12,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  userProvider: {
-    fontSize: 10,
-    color: colors.subtext,
+    fontSize: 12 
   },
   profileBtn: {
-    width: Platform.OS === 'web' ? 40 : 50,
-    height: Platform.OS === 'web' ? 40 : 50,
-    borderRadius: Platform.OS === 'web' ? 20 : 25,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
-    minWidth: Platform.OS === 'web' ? 40 : 50,
-    minHeight: Platform.OS === 'web' ? 40 : 50,
+    flexShrink: 0,
   },
-  profileIcon: { fontSize: Platform.OS === 'web' ? 18 : 22, color: colors.text, fontWeight: "600" },
+  profileIcon: { 
+    fontSize: 16, 
+    color: colors.text, 
+    fontWeight: "600" 
+  },
+  
+  // Modal Overlay Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  profileModal: {
+    marginTop: 80, // Height of header
+    marginRight: 12,
+    marginLeft: 'auto',
+  },
+  profileModalContent: {
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  userInfoModal: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  userNameModal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  userRoleModal: {
+    fontSize: 12,
+    color: colors.subtext,
+  },
+  logoutButtonModal: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  logoutButtonTextModal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B6B',
+  },
 });

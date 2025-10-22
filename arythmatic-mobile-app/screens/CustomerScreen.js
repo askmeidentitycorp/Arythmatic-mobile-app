@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomerCard from '../components/Customer/CustomerCard';
 import CustomerHeader from '../components/Customer/CustomerHeader';
 import CustomerKPIs from '../components/Customer/CustomerKPIs';
@@ -53,7 +53,7 @@ export default function CustomerScreen({ navigation }) {
     refresh,
     goToPage,
     hasMore
-  } = useCustomers(searchParams, 20, true); // Keep nested=true for customer relationships
+  } = useCustomers(searchParams, 10, true); // Keep nested=true for customer relationships
 
   const {
     createCustomer,
@@ -355,6 +355,7 @@ export default function CustomerScreen({ navigation }) {
             </Text>
           </View>
         )}
+      </ScrollView>
       
       {/* CRUD Modal */}
       <CrudModal
@@ -369,7 +370,6 @@ export default function CustomerScreen({ navigation }) {
       />
     </SafeAreaView>
   );
-}
 }
 
 const styles = StyleSheet.create({

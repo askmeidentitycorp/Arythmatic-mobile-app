@@ -21,7 +21,7 @@ export function usePayments(initialFilters = {}, initialPageSize = 10) {
     try {
       const params = {
         page: pagination.currentPage,
-        pageSize: pagination.pageSize,
+        page_size: pagination.pageSize,
         ...filters,
       };
       const response = await paymentService.getAll(params);

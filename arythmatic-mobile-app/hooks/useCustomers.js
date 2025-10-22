@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { customerService } from '../services/customerService';
 
-export const useCustomers = (params = {}, pageSize = 20, useNested = true) => {
+export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
-    pageSize: 20,
+    pageSize: pageSize,
     totalCount: 0,
     totalPages: 0,
     hasNext: false,
@@ -25,7 +25,7 @@ export const useCustomers = (params = {}, pageSize = 20, useNested = true) => {
       
       const requestParams = {
         page,
-        page_size: 20,
+        page_size: pageSize,
         ...params,
       };
       
@@ -55,7 +55,7 @@ export const useCustomers = (params = {}, pageSize = 20, useNested = true) => {
       const count = data?.count || 0;
       
       // Calculate total pages based on API count
-      const totalPages = Math.ceil(count / 20) || 0;
+      const totalPages = Math.ceil(count / pageSize) || 0;
 
       console.log('📊 SIMPLE Processing response:', {
         resultsLength: results.length,
@@ -69,7 +69,7 @@ export const useCustomers = (params = {}, pageSize = 20, useNested = true) => {
 
       const newPagination = {
         currentPage: page,
-        pageSize: 20,
+        pageSize: pageSize,
         totalCount: count,
         totalPages: totalPages,
         hasNext: page < totalPages,

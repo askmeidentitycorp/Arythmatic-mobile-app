@@ -54,7 +54,7 @@ const TwoCol = ({ children }) => {
   return <View style={styles.twoCol}>{kids}</View>;
 };
 
-export default function InvoiceScreen() {
+export default function InvoiceScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -400,7 +400,12 @@ export default function InvoiceScreen() {
     <View style={styles.container}>
       <ScrollView>
         {/* Header */}
-        <InvoiceHeader onAddPress={openAddModal} />
+        <InvoiceHeader 
+          onAddPress={openAddModal} 
+          totalCount={pagination.totalCount}
+          onBackPress={navigation?.goBack ? navigation.goBack : null}
+          backToScreen={navigation?.backToScreen || (navigation?.params?.salesRepName ? 'Sales Rep' : null)}
+        />
 
         {/* KPIs */}
         <InvoiceKPIs

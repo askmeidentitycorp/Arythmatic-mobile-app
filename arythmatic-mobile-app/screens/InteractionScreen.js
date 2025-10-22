@@ -114,7 +114,7 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
     refresh,
     goToPage,
     hasMore 
-  } = useInteractions(searchParams, 20, true);
+  } = useInteractions(searchParams, 10, true);
 
   const { 
     createInteraction,

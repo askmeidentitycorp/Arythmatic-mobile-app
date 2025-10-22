@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { salesRepService } from '../services/salesRepService';
 
-export const useSalesReps = (params = {}, pageSize = 20, useAnalytics = false) => {
+export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) => {
   const [salesReps, setSalesReps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

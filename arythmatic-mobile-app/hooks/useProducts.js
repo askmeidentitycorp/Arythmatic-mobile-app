@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { productService } from '../services/productService';
 
-export const useProducts = (params = {}, pageSize = 20, useNested = true) => {
+export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

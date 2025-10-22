@@ -25,7 +25,7 @@ import {
   useSalesReps
 } from '../hooks/useSalesReps';
 
-export default function SalesRepsScreen() {
+export default function SalesRepsScreen({ navigation, onNavigateToInteractions }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -71,7 +71,7 @@ export default function SalesRepsScreen() {
     refresh,
     goToPage,
     hasMore
-  } = useSalesReps(searchParams, 20, false); // useAnalytics = false
+  } = useSalesReps(searchParams, 10, false); // useAnalytics = false
 
   // Get metrics - uses regular endpoint
   const {
@@ -232,6 +232,36 @@ export default function SalesRepsScreen() {
         setSelectedSalesRep(salesRep);
         setModalMode('edit');
         setModalVisible(true);
+        break;
+        
+      case "Show Interactions":
+        console.log('Navigate to Interactions for:', salesRep.name);
+        if (navigation?.navigateToInteractions) {
+          navigation.navigateToInteractions(salesRep.id, salesRep.name);
+        } else if (onNavigateToInteractions) {
+          // Fallback to old method
+          onNavigateToInteractions(salesRep.id, salesRep.name);
+        }
+        break;
+        
+      case "Show Invoices":
+        console.log('Navigate to Invoices for:', salesRep.name);
+        if (navigation?.navigateToInvoices) {
+          navigation.navigateToInvoices(salesRep.id, salesRep.name);
+        } else {
+          Alert.alert("Navigation", `Invoices for ${salesRep.name} - Feature coming soon`);
+        }
+        break;
+        
+      case "View Performance":
+        Alert.alert("Performance", `Performance metrics for ${salesRep.name} - Feature coming soon`);
+        break;
+        
+      case "View Details":
+        Alert.alert(
+          "Sales Rep Details",
+          `Name: ${salesRep.name}\nEmail: ${salesRep.email}\nRole: ${salesRep.role}\nStatus: ${salesRep.status || 'active'}`
+        );
         break;
         
       default:

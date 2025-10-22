@@ -20,8 +20,8 @@ import {
   Dimensions,
   FlatList,
   ActivityIndicator,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 import { usePayments, usePaymentMutations } from '../hooks/usePayments';
 import { usePaymentAnalytics } from '../hooks/usePaymentAnalytics';
@@ -344,7 +344,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   });
 
   // API hooks
-  const { payments, loading: paymentsLoading, error: paymentsError, refetch } = usePayments(apiFilters, 50);
+  const { payments, loading: paymentsLoading, error: paymentsError, refetch } = usePayments(apiFilters, 10);
   const { analytics, loading: analyticsLoading, error: analyticsError, refresh: refreshAnalytics } = usePaymentAnalytics(apiFilters);
   const { processPayment, refundPayment, voidPayment, loading: mutationLoading } = usePaymentMutations();
 
@@ -496,22 +496,6 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity 
-              style={styles.exportButton} 
-              onPress={() => {
-                Alert.alert('Export', 'Payment export feature will be implemented');
-              }}
-            >
-              <Text style={styles.exportButtonText}>📤 Export</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.recordButton} 
-              onPress={() => {
-                Alert.alert('Record Payment', 'New payment recording feature will be implemented');
-              }}
-            >
-              <Text style={styles.recordButtonText}>+ Record Payment</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
               style={styles.filterButton} 
               onPress={toggleFilters}
             >
@@ -524,7 +508,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {overdueCount > 0 && (
           <View style={styles.overdueBanner}>
             <Text style={styles.overdueBannerText}>
-              当前有{overdueCount}笔逾期借款 请归还
+              {overdueCount} overdue payments require attention
             </Text>
           </View>
         )}

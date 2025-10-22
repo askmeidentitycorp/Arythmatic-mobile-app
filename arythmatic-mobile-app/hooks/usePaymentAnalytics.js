@@ -22,7 +22,7 @@ export function usePaymentAnalytics(filters = {}) {
       const response = await paymentService.getAll({
         ...filters,
         analytics: true,
-        pageSize: 1000, // Get all for analytics
+        page_size: 1000, // Get all for analytics
       });
       
       // Calculate analytics from the response
@@ -74,7 +74,7 @@ export function usePaymentAnalytics(filters = {}) {
   // Format the analytics data for display
   const formatCurrency = (value) => {
     const num = Number(value) || 0;
-    return `$${num.toFixed(2)}`;
+    return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formattedAnalytics = {
