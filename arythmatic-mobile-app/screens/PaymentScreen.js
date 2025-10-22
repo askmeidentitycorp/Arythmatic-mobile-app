@@ -254,9 +254,10 @@ const DarkPicker = React.memo(({ selectedValue, onValueChange, items, placeholde
         transparent
         animationType="slide"
         onRequestClose={() => setShowPicker(false)}
+        statusBarTranslucent
       >
-        <View style={styles.pickerModalOverlay}>
-          <View style={styles.pickerModalContent}>
+        <Pressable style={styles.pickerModalOverlay} onPress={() => setShowPicker(false)}>
+          <View style={styles.pickerModalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.pickerModalHeader}>
               <TouchableOpacity onPress={() => setShowPicker(false)}>
                 <Text style={styles.pickerModalCancel}>Cancel</Text>
@@ -292,7 +293,7 @@ const DarkPicker = React.memo(({ selectedValue, onValueChange, items, placeholde
               </ScrollView>
             </View>
           </View>
-        </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -469,11 +470,16 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 160, paddingTop: 10 }}
         showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header with Back Button */}
         <View style={styles.headerRow}>
@@ -489,13 +495,17 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           <View style={styles.headerActions}>
             <TouchableOpacity 
               style={styles.exportButton} 
-              onPress={() => console.log('Export payments')}
+              onPress={() => {
+                Alert.alert('Export', 'Payment export feature will be implemented');
+              }}
             >
               <Text style={styles.exportButtonText}>📤 Export</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.recordButton} 
-              onPress={() => console.log('Record new payment')}
+              onPress={() => {
+                Alert.alert('Record Payment', 'New payment recording feature will be implemented');
+              }}
             >
               <Text style={styles.recordButtonText}>+ Record Payment</Text>
             </TouchableOpacity>
@@ -659,7 +669,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           scrollEnabled={false}
         />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -703,7 +713,8 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: Platform.OS === 'web' ? 8 : 4,
   },
   exportButton: {
     backgroundColor: colors.panel,
@@ -1093,16 +1104,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
+    zIndex: 9999,
   },
   pickerModalContent: {
     backgroundColor: colors.bg,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     maxHeight: height * 0.7,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   pickerModalHeader: {
     flexDirection: 'row',
@@ -1165,7 +1185,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
-    gap: 12,
+    gap: Platform.OS === 'web' ? 12 : 8,
+    flexWrap: Platform.OS === 'web' ? 'nowrap' : 'wrap',
   },
   currencyCard: {
     flex: 1,
@@ -1174,6 +1195,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    minWidth: Platform.OS === 'web' ? 'auto' : '45%',
   },
   currencyLabel: {
     fontSize: 14,
