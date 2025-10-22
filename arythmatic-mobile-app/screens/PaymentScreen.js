@@ -319,7 +319,10 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     searchText: "", 
     status: "", 
     method: "",
-    isOverdue: false 
+    isOverdue: false,
+    dateRange: "",
+    minAmount: "",
+    maxAmount: ""
   });
 
   // API hooks
@@ -350,19 +353,25 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   }, [analytics]);
 
   /* ---------- Filters ---------- */
-  // Apply local text search on API results
+  // Apply local filtering on API results
   const filteredPayments = useMemo(() => {
-    if (!localFilters.searchText) {
-      return payments;
-    }
     return payments.filter((p) => {
-      const matchSearch = p.id?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+      // Text search
+      const matchSearch = !localFilters.searchText || (
+        p.id?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
         p.customerName?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
         p.invoice?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
-        p.description?.toLowerCase().includes(localFilters.searchText.toLowerCase());
-      return matchSearch;
+        p.description?.toLowerCase().includes(localFilters.searchText.toLowerCase())
+      );
+      
+      // Amount range filtering (local only for instant feedback)
+      const amount = typeof p.amount === 'number' ? p.amount : parseFloat(p.amount) || 0;
+      const matchMinAmount = !localFilters.minAmount || amount >= parseFloat(localFilters.minAmount);
+      const matchMaxAmount = !localFilters.maxAmount || amount <= parseFloat(localFilters.maxAmount);
+      
+      return matchSearch && matchMinAmount && matchMaxAmount;
     });
-  }, [payments, localFilters.searchText]);
+  }, [payments, localFilters.searchText, localFilters.minAmount, localFilters.maxAmount]);
 
   // Update API filters when local filters change (debounced)
   useEffect(() => {
@@ -371,18 +380,24 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         status: localFilters.status || undefined,
         method: localFilters.method || undefined,
         isOverdue: localFilters.isOverdue || undefined,
+        dateRange: localFilters.dateRange || undefined,
+        minAmount: localFilters.minAmount ? parseFloat(localFilters.minAmount) : undefined,
+        maxAmount: localFilters.maxAmount ? parseFloat(localFilters.maxAmount) : undefined,
       };
       setApiFilters(newApiFilters);
     }, 500);
     return () => clearTimeout(timer);
-  }, [localFilters.status, localFilters.method, localFilters.isOverdue]);
+  }, [localFilters.status, localFilters.method, localFilters.isOverdue, localFilters.dateRange, localFilters.minAmount, localFilters.maxAmount]);
 
   const clearFilters = useCallback(() => {
     setLocalFilters({ 
       searchText: "", 
       status: "", 
       method: "",
-      isOverdue: false 
+      isOverdue: false,
+      dateRange: "",
+      minAmount: "",
+      maxAmount: ""
     });
     setApiFilters({});
   }, []);
@@ -457,6 +472,18 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => navigation?.navigate?.('Interactions') || console.log('Navigate to Interactions')}
+            >
+              <Text style={styles.actionButtonText}>Interactions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => navigation?.navigate?.('Invoices') || console.log('Navigate to Invoices')}
+            >
+              <Text style={styles.actionButtonText}>Invoices</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={styles.filterButton} 
               onPress={toggleFilters}
             >
@@ -505,6 +532,40 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               onChangeText={(v) => setLocalFilters((f) => ({ ...f, searchText: v }))}
               style={styles.input}
             />
+
+            {/* Date Range filter */}
+            <DarkPicker
+              selectedValue={localFilters.dateRange || ""}
+              onValueChange={(v) => setLocalFilters((f) => ({ ...f, dateRange: v }))}
+              items={[
+                { label: "All Time", value: "" },
+                { label: "This Week", value: "This Week" },
+                { label: "This Month", value: "This Month" },
+                { label: "This Quarter", value: "This Quarter" },
+                { label: "This Year", value: "This Year" },
+              ]}
+              placeholder="All Time"
+            />
+
+            {/* Amount Range filter */}
+            <View style={styles.amountRangeContainer}>
+              <TextInput
+                placeholder="Min Amount"
+                placeholderTextColor="#9aa6bf"
+                value={localFilters.minAmount || ""}
+                onChangeText={(v) => setLocalFilters((f) => ({ ...f, minAmount: v }))}
+                style={[styles.input, styles.halfInput]}
+                keyboardType="numeric"
+              />
+              <TextInput
+                placeholder="Max Amount"
+                placeholderTextColor="#9aa6bf"
+                value={localFilters.maxAmount || ""}
+                onChangeText={(v) => setLocalFilters((f) => ({ ...f, maxAmount: v }))}
+                style={[styles.input, styles.halfInput]}
+                keyboardType="numeric"
+              />
+            </View>
 
             {/* Status filter */}
             <DarkPicker
@@ -605,6 +666,21 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: Platform.OS === 'web' ? 10 : 8,
+    paddingVertical: Platform.OS === 'web' ? 6 : 5,
+    borderRadius: 6,
+    minHeight: 32,
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: Platform.OS === 'web' ? 12 : 11,
   },
   title: { 
     color: colors.text, 
@@ -675,6 +751,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  amountRangeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
+  },
+  halfInput: {
+    flex: 1,
   },
   
   // Checkbox for filters
