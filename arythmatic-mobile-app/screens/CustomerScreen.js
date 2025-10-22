@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -265,7 +266,7 @@ export default function CustomerScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
         {/* Header with Back Button */}
         <View style={styles.headerRow}>
@@ -366,7 +367,7 @@ export default function CustomerScreen({ navigation }) {
         loading={mutationLoading}
         mode={modalMode}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 }

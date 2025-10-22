@@ -72,12 +72,17 @@ export function usePaymentAnalytics(filters = {}) {
   }, [fetchAnalytics]);
 
   // Format the analytics data for display
+  const formatCurrency = (value) => {
+    const num = Number(value) || 0;
+    return `$${num.toFixed(2)}`;
+  };
+
   const formattedAnalytics = {
     totalPayments: analytics.totalPayments || 0,
-    totalValue: `$${(analytics.totalValue || 0).toFixed(2)}`,
-    successful: `$${(analytics.successful || 0).toFixed(2)}`,
-    failed: `$${(analytics.failed || 0).toFixed(2)}`,
-    pending: `$${(analytics.pending || 0).toFixed(2)}`,
+    totalValue: formatCurrency(analytics.totalValue),
+    successful: formatCurrency(analytics.successful),
+    failed: formatCurrency(analytics.failed),
+    pending: formatCurrency(analytics.pending),
     overdue: analytics.overdue || 0,
   };
 

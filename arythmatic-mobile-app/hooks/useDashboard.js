@@ -171,7 +171,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       },
       {
         label: 'Conversion Rate',
-        value: `${conversionRate.toFixed(1)}%`,
+        value: `${(Number(conversionRate) || 0).toFixed(1)}%`,
         color: '#6B5CE7',
         icon: '📈'
       },
@@ -183,7 +183,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       },
       {
         label: 'Team Performance',
-        value: `${teamPerformance.toFixed(1)}%`,
+        value: `${(Number(teamPerformance) || 0).toFixed(1)}%`,
         color: '#8B5CF6',
         icon: '🎆'
       },

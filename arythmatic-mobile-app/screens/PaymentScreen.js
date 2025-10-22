@@ -20,6 +20,7 @@ import {
   Dimensions,
   FlatList,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { colors } from "../constants/config";
 import { usePayments, usePaymentMutations } from '../hooks/usePayments';
@@ -470,11 +471,12 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 160, paddingTop: 10 }}
@@ -669,7 +671,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           scrollEnabled={false}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

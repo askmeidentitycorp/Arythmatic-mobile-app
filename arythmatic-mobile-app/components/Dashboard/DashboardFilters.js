@@ -1,67 +1,57 @@
 // components/Dashboard/DashboardFilters.js
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Modal, ScrollView } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { colors } from '../../constants/config';
 
 const SimplePicker = ({ label, value, items, onValueChange, selectedKey }) => {
-  const [showModal, setShowModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const displayValue = items.find(item => item.value === value)?.label || label;
 
   return (
-    <>
+    <View style={styles.pickerContainer}>
       <TouchableOpacity 
         style={styles.pickerButton}
-        onPress={() => setShowModal(true)}
+        onPress={() => setShowDropdown(!showDropdown)}
       >
         <Text style={styles.pickerText}>{displayValue}</Text>
-        <Text style={styles.pickerArrow}>▼</Text>
+        <Text style={[styles.pickerArrow, showDropdown && styles.pickerArrowUp]}>▼</Text>
       </TouchableOpacity>
       
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowModal(false)}
-        presentationStyle="overFullScreen"
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setShowModal(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select {label}</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+      {showDropdown && (
+        <View style={styles.dropdown}>
+          <ScrollView style={styles.dropdownList} nestedScrollEnabled>
+            {items.map((item, index) => (
+              <TouchableOpacity
+                key={item.key || item.value || index}
+                style={[
+                  styles.dropdownItem,
+                  item.value === value && styles.dropdownItemSelected
+                ]}
+                onPress={() => {
+                  onValueChange(item.value);
+                  setShowDropdown(false);
+                }}
+              >
+                <Text style={[
+                  styles.dropdownItemText,
+                  item.value === value && styles.dropdownItemTextSelected
+                ]}>
+                  {item.label}
+                </Text>
               </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {items.map((item, index) => (
-                <TouchableOpacity
-                  key={item.key || item.value || index}
-                  style={[
-                    styles.modalItem,
-                    item.value === value && styles.modalItemSelected
-                  ]}
-                  onPress={() => {
-                    onValueChange(item.value);
-                    setShowModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    item.value === value && styles.modalItemTextSelected
-                  ]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      
+      {showDropdown && (
+        <TouchableOpacity 
+          style={styles.dropdownOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowDropdown(false)}
+        />
+      )}
+    </View>
   );
 };
 
@@ -124,6 +114,11 @@ const styles = StyleSheet.create({
   filterBox: { 
     flex: 1, 
     marginRight: 10,
+    zIndex: 1000,
+  },
+  pickerContainer: {
+    position: 'relative',
+    zIndex: 1000,
   },
   pickerButton: {
     backgroundColor: colors.panel,
@@ -145,58 +140,58 @@ const styles = StyleSheet.create({
   pickerArrow: {
     color: colors.subtext,
     fontSize: 12,
+    transform: [{ rotate: '0deg' }],
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 0,
+  pickerArrowUp: {
+    transform: [{ rotate: '180deg' }],
   },
-  modalContent: {
+  dropdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 999,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     backgroundColor: colors.bg,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    width: '100%',
-    maxHeight: '70%',
-    paddingBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    maxHeight: 200,
+    zIndex: 1001,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  modalClose: {
-    fontSize: 18,
-    color: colors.subtext,
-    padding: 4,
-  },
-  modalList: {
+  dropdownList: {
     maxHeight: 200,
   },
-  modalItem: {
-    padding: 16,
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  modalItemSelected: {
+  dropdownItemSelected: {
     backgroundColor: colors.primary + '20',
   },
-  modalItemText: {
+  dropdownItemText: {
     fontSize: 14,
     color: colors.text,
   },
-  modalItemTextSelected: {
+  dropdownItemTextSelected: {
     color: colors.primary,
     fontWeight: '600',
   },

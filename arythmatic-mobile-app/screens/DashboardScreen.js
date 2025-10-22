@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -99,7 +100,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
       <ScrollView style={styles.container}>
         {/* Filters Row */}
         <DashboardFilters
@@ -187,7 +188,7 @@ export default function DashboardScreen() {
           )}
         </DashboardPanel>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
