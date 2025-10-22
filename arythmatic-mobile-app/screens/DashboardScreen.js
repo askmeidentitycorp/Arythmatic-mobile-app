@@ -21,8 +21,7 @@ import RepCard from '../components/Dashboard/RepCard';
 import { useDashboard } from '../hooks/useDashboard';
 
 export default function DashboardScreen() {
-  // Currency dropdown with unique keys
-  const [currencyOpen, setCurrencyOpen] = useState(false);
+  // Filter states
   const [currency, setCurrency] = useState("USD");
   const [currencyItems] = useState([
     { label: "INR (₹)", value: "INR", key: "currency_inr" },
@@ -30,8 +29,6 @@ export default function DashboardScreen() {
     { label: "EUR (€)", value: "EUR", key: "currency_eur" },
   ]);
 
-  // Date Range dropdown with unique keys
-  const [dateOpen, setDateOpen] = useState(false);
   const [dateRange, setDateRange] = useState("This Month");
   const [dateItems] = useState([
     { label: "This Week", value: "This Week", key: "date_week" },
@@ -63,16 +60,7 @@ export default function DashboardScreen() {
 
   // Removed toggle functions for cleaner mobile interface
 
-  // Handle dropdown conflicts - close one when other opens
-  const handleCurrencyOpen = useCallback((open) => {
-    setCurrencyOpen(open);
-    if (open) setDateOpen(false);
-  }, []);
-  
-  const handleDateOpen = useCallback((open) => {
-    setDateOpen(open);
-    if (open) setCurrencyOpen(false);
-  }, []);
+  // Removed dropdown conflict handlers - using simple modals now
 
   // Update data when currency or date range changes
   useEffect(() => {
@@ -117,13 +105,9 @@ export default function DashboardScreen() {
         <DashboardFilters
           currency={currency}
           setCurrency={setCurrency}
-          currencyOpen={currencyOpen}
-          setCurrencyOpen={handleCurrencyOpen}
           currencyItems={currencyItems}
           dateRange={dateRange}
           setDateRange={setDateRange}
-          dateOpen={dateOpen}
-          setDateOpen={handleDateOpen}
           dateItems={dateItems}
           onRefresh={handleRefresh}
           loading={loading}

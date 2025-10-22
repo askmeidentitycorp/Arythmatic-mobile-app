@@ -18,22 +18,32 @@ import { colors } from '../constants/config';
 export default function LoginScreen() {
   const { signIn, isLoading, error, clearError } = useAuth();
 
-  // Simple form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Mock login form state
+  const [email, setEmail] = useState('admin@test.com');
+  const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Handle login
+  // Handle mock login
   const handleLogin = useCallback(async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert('Validation Error', 'Please enter both email and password');
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      Alert.alert('Validation Error', 'Please enter a valid email address');
+    // Mock credential validation
+    const validCredentials = [
+      { email: 'admin@test.com', password: 'admin123' },
+      { email: 'test@test.com', password: 'password123' },
+      { email: 'demo@demo.com', password: 'demo123' },
+      { email: 'user@example.com', password: 'user123' }
+    ];
+
+    const isValidCredential = validCredentials.some(
+      cred => cred.email === email.trim() && cred.password === password
+    );
+
+    if (!isValidCredential) {
+      Alert.alert('Login Failed', 'Invalid credentials. Try:\n• admin@test.com / admin123\n• test@test.com / password123\n• demo@demo.com / demo123');
       return;
     }
 
@@ -59,7 +69,16 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>🧮</Text>
           <Text style={styles.title}>Arythmatic</Text>
-          <Text style={styles.subtitle}>Sign In to Your Account</Text>
+          <Text style={styles.subtitle}>Mock Login - Development Mode</Text>
+        </View>
+
+        {/* Test Credentials Info */}
+        <View style={styles.testInfo}>
+          <Text style={styles.testInfoTitle}>📋 Test Credentials</Text>
+          <Text style={styles.testInfoText}>• admin@test.com / admin123</Text>
+          <Text style={styles.testInfoText}>• test@test.com / password123</Text>
+          <Text style={styles.testInfoText}>• demo@demo.com / demo123</Text>
+          <Text style={styles.testInfoText}>• user@example.com / user123</Text>
         </View>
 
         {/* Login Form */}
@@ -111,7 +130,7 @@ export default function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>Mock Sign In</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -164,6 +183,27 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: colors.subtext,
+    textAlign: 'center',
+  },
+  testInfo: {
+    backgroundColor: colors.panel,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  testInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  testInfoText: {
+    fontSize: 12,
+    color: colors.subtext,
+    marginBottom: 2,
     textAlign: 'center',
   },
   form: {
