@@ -19,9 +19,11 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "../constants/config";
+import { usePayments, usePaymentMutations } from '../hooks/usePayments';
+import { usePaymentAnalytics } from '../hooks/usePaymentAnalytics';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -310,82 +312,79 @@ const LabeledInput = React.memo(({ label, value, onChangeText, placeholder, edit
 
 /* ---------- Main Component ---------- */
 export default function PaymentScreen({ onNavigateToDetails, navigation }) {
-  const [payments, setPayments] = useState(INITIAL_PAYMENTS);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ 
+  const [apiFilters, setApiFilters] = useState({});
+  const [localFilters, setLocalFilters] = useState({ 
     searchText: "", 
     status: "", 
     method: "",
     isOverdue: false 
   });
 
-  /* ---------- Persistence ---------- */
-  useEffect(() => {
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem("payments");
-        if (saved) setPayments(JSON.parse(saved));
-      } catch (e) {
-        console.warn("Failed to load payments:", e);
-      }
-    })();
-  }, []);
+  // API hooks
+  const { payments, loading: paymentsLoading, error: paymentsError, refetch } = usePayments(apiFilters, 50);
+  const { analytics, loading: analyticsLoading, error: analyticsError, refresh: refreshAnalytics } = usePaymentAnalytics(apiFilters);
+  const { processPayment, refundPayment, voidPayment, loading: mutationLoading } = usePaymentMutations();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem("payments", JSON.stringify(payments));
-      } catch (e) {
-        console.warn("Failed to save payments:", e);
-      }
-    })();
-  }, [payments]);
+  // Refresh handler for analytics
+  const handleRefresh = useCallback(() => {
+    refetch();
+    refreshAnalytics();
+  }, [refetch, refreshAnalytics]);
 
-  /* ---------- KPIs ---------- */
+  // Combined loading state
+  const loading = paymentsLoading || analyticsLoading;
+  const error = paymentsError || analyticsError;
+
+  /* ---------- KPI Metrics from Analytics API ---------- */
   const metrics = useMemo(() => {
-    const total = payments.length;
-    const completed = payments.filter((p) => p.status === "Completed").length;
-    const pending = payments.filter((p) => p.status === "Pending").length;
-    const overdue = payments.filter((p) => p.isOverdue).length;
-    
-    // Calculate total amount - now using the numeric amount field
-    const totalAmount = payments.reduce((sum, p) => {
-      return sum + (typeof p.amount === 'number' ? p.amount : 0);
-    }, 0);
-    
-    return { 
-      total, 
-      completed, 
-      pending, 
-      overdue,
-      totalAmount: `₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+    return {
+      total: analytics.totalPayments,
+      totalValue: analytics.totalValue,
+      successful: analytics.successful,
+      failed: analytics.failed,
+      pending: analytics.pending,
+      overdue: analytics.overdue,
     };
-  }, [payments]);
+  }, [analytics]);
 
   /* ---------- Filters ---------- */
+  // Apply local text search on API results
   const filteredPayments = useMemo(() => {
+    if (!localFilters.searchText) {
+      return payments;
+    }
     return payments.filter((p) => {
-      const matchSearch =
-        !filters.searchText ||
-        p.id.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-        p.customerName.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-        p.invoice.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-        p.description.toLowerCase().includes(filters.searchText.toLowerCase());
-      const matchStatus = !filters.status || p.status === filters.status;
-      const matchMethod = !filters.method || p.method === filters.method;
-      const matchOverdue = !filters.isOverdue || p.isOverdue === filters.isOverdue;
-      return matchSearch && matchStatus && matchMethod && matchOverdue;
+      const matchSearch = p.id?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+        p.customerName?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+        p.invoice?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+        p.description?.toLowerCase().includes(localFilters.searchText.toLowerCase());
+      return matchSearch;
     });
-  }, [payments, filters]);
+  }, [payments, localFilters.searchText]);
+
+  // Update API filters when local filters change (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const newApiFilters = {
+        status: localFilters.status || undefined,
+        method: localFilters.method || undefined,
+        isOverdue: localFilters.isOverdue || undefined,
+      };
+      setApiFilters(newApiFilters);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localFilters.status, localFilters.method, localFilters.isOverdue]);
 
   const clearFilters = useCallback(() => {
-    setFilters({ 
+    setLocalFilters({ 
       searchText: "", 
       status: "", 
       method: "",
       isOverdue: false 
     });
+    setApiFilters({});
   }, []);
 
   /* ---------- Payment Actions ---------- */
@@ -397,20 +396,21 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     }
   }, [onNavigateToDetails]);
 
-  const handleRepayPayment = useCallback((payment) => {
-    Alert.alert(
-      "Payment Processed",
-      `Payment of ${payment.amountFormatted} for ${payment.customerName} has been processed.`,
-      [{ text: "OK" }]
-    );
-    
-    // Update payment status from pending to completed
-    setPayments(prev => 
-      prev.map(p => 
-        p.id === payment.id ? { ...p, status: "Completed", isOverdue: false } : p
-      )
-    );
-  }, []);
+  const handleRepayPayment = useCallback(async (payment) => {
+    try {
+      await processPayment(payment.id);
+      Alert.alert(
+        "Payment Processed",
+        `Payment of ${payment.amountFormatted} for ${payment.customerName} has been processed.`,
+        [{ text: "OK" }]
+      );
+      // Refresh data after successful processing
+      refetch();
+      refreshAnalytics();
+    } catch (error) {
+      Alert.alert("Error", `Failed to process payment: ${error.message}`);
+    }
+  }, [processPayment, refetch, refreshAnalytics]);
 
   const toggleFilters = useCallback(() => {
     setShowFilters(prev => !prev);
@@ -428,10 +428,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     );
   }, [handleNextPayment, handleRepayPayment]);
 
-  // Count overdue payments for the warning banner
-  const overdueCount = useMemo(() => {
-    return payments.filter(p => p.isOverdue).length;
-  }, [payments]);
+  // Use overdue count from analytics
+  const overdueCount = metrics.overdue;
 
   const handleBackPress = () => {
     if (navigation) {
@@ -476,13 +474,26 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           </View>
         )}
 
-        {/* KPIs */}
-        <View style={styles.kpis}>
-          <KPI label="Total Payments" value={metrics.total} />
-          <KPI label="Completed" value={metrics.completed} />
-          <KPI label="Pending" value={metrics.pending} />
-          <KPI label="Overdue" value={metrics.overdue} color="#EA4335" />
-        </View>
+        {/* Loading State */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading payment data...</Text>
+          </View>
+        )}
+
+        {/* Payment Management KPIs - Match Screenshot */}
+        {!loading && (
+          <>
+            <Text style={styles.sectionTitle}>Payment Management</Text>
+            <View style={styles.kpis}>
+              <KPI label="Total Payments" value={metrics.total} color="#6B9AFF" />
+              <KPI label="Total Value" value={metrics.totalValue} color="#6B9AFF" />
+              <KPI label="Successful" value={metrics.successful} color="#31C76A" />
+              <KPI label="Failed/Voided" value={metrics.failed} color="#EA4335" />
+            </View>
+          </>
+        )}
 
         {/* Filters Panel */}
         {showFilters && (
@@ -490,15 +501,15 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             <TextInput
               placeholder="Search by ID, customer, invoice, description"
               placeholderTextColor="#9aa6bf"
-              value={filters.searchText}
-              onChangeText={(v) => setFilters((f) => ({ ...f, searchText: v }))}
+              value={localFilters.searchText}
+              onChangeText={(v) => setLocalFilters((f) => ({ ...f, searchText: v }))}
               style={styles.input}
             />
 
             {/* Status filter */}
             <DarkPicker
-              selectedValue={filters.status}
-              onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+              selectedValue={localFilters.status}
+              onValueChange={(v) => setLocalFilters((f) => ({ ...f, status: v }))}
               items={[
                 { label: "All Status", value: "" },
                 { label: "Completed", value: "Completed" },
@@ -511,8 +522,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
             {/* Method filter */}
             <DarkPicker
-              selectedValue={filters.method}
-              onValueChange={(v) => setFilters((f) => ({ ...f, method: v }))}
+              selectedValue={localFilters.method}
+              onValueChange={(v) => setLocalFilters((f) => ({ ...f, method: v }))}
               items={[
                 { label: "All Methods", value: "" },
                 { label: "Credit Card", value: "Credit Card" },
@@ -526,10 +537,10 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             <View style={styles.checkboxContainer}>
               <TouchableOpacity
                 style={styles.checkbox}
-                onPress={() => setFilters(f => ({ ...f, isOverdue: !f.isOverdue }))}
+                onPress={() => setLocalFilters(f => ({ ...f, isOverdue: !f.isOverdue }))}
               >
-                <View style={[styles.checkboxBox, filters.isOverdue && styles.checkboxBoxChecked]}>
-                  {filters.isOverdue && <Text style={styles.checkmark}>✓</Text>}
+                <View style={[styles.checkboxBox, localFilters.isOverdue && styles.checkboxBoxChecked]}>
+                  {localFilters.isOverdue && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <Text style={styles.checkboxLabel}>Show Overdue Only</Text>
               </TouchableOpacity>
@@ -943,5 +954,28 @@ const styles = StyleSheet.create({
   pickerOptionText: {
     color: colors.text,
     fontSize: 16,
+  },
+
+  // Section Title
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+
+  // Loading Container
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
   },
 });
