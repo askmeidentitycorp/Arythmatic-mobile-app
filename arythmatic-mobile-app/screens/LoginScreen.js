@@ -14,57 +14,37 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../constants/config';
-import { TEST_CONFIG } from '../constants/authConfig';
 
 export default function LoginScreen() {
-  const {
-    signIn,
-    isLoading,
-    error,
-    clearError,
-    isTestMode,
-    isMSAL,
-    hasUsernamePassword,
-    hasInteractiveLogin,
-  } = useAuth();
+  const { signIn, isLoading, error, clearError } = useAuth();
 
-  // Form state for test login
-  const [username, setUsername] = useState(TEST_CONFIG.defaultUsername || '');
-  const [password, setPassword] = useState(TEST_CONFIG.defaultPassword || '');
+  // Simple form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Handle test login
-  const handleTestLogin = useCallback(async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Validation Error', 'Please enter both username and password');
+  // Handle login
+  const handleLogin = useCallback(async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Validation Error', 'Please enter both email and password');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Validation Error', 'Please enter a valid email address');
       return;
     }
 
     try {
       clearError();
-      await signIn({ username: username.trim(), password });
+      await signIn({ email: email.trim(), password });
       // Navigation will be handled by App.js based on auth state
     } catch (error) {
       Alert.alert('Login Failed', error.message);
     }
-  }, [username, password, signIn, clearError]);
-
-  // Handle MSAL login
-  const handleMSALLogin = useCallback(async () => {
-    try {
-      clearError();
-      await signIn();
-      // Navigation will be handled by App.js based on auth state
-    } catch (error) {
-      Alert.alert('Login Failed', error.message);
-    }
-  }, [signIn, clearError]);
-
-  // Clear form
-  const clearForm = useCallback(() => {
-    setUsername(TEST_CONFIG.defaultUsername || '');
-    setPassword(TEST_CONFIG.defaultPassword || '');
-  }, []);
+  }, [email, password, signIn, clearError]);
 
   return (
     <KeyboardAvoidingView 
@@ -79,117 +59,62 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>🧮</Text>
           <Text style={styles.title}>Arythmatic</Text>
-          <Text style={styles.subtitle}>
-            {isTestMode ? 'Development Mode' : isMSAL ? 'Microsoft Login' : 'Sign In'}
-          </Text>
+          <Text style={styles.subtitle}>Sign In to Your Account</Text>
         </View>
 
-        {/* Auth Provider Info */}
-        <View style={styles.providerInfo}>
-          <Text style={styles.providerText}>
-            Authentication: {isTestMode ? 'Test Mode' : isMSAL ? 'Microsoft MSAL' : 'Unknown'}
-          </Text>
-        </View>
+        {/* Login Form */}
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor={colors.subtext}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoComplete="email"
+            />
+          </View>
 
-        {/* Test Login Form */}
-        {hasUsernamePassword && (
-          <View style={styles.form}>
-            <Text style={styles.sectionTitle}>Test Login</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Username / Email</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
               <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter username or email"
+                style={[styles.input, styles.passwordInput]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
                 placeholderTextColor={colors.subtext}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                autoComplete="email"
+                secureTextEntry={!showPassword}
+                textContentType="password"
+                autoComplete="password"
               />
+              <TouchableOpacity
+                style={styles.passwordToggle}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={styles.passwordToggleText}>
+                  {showPassword ? '🙈' : '👁️'}
+                </Text>
+              </TouchableOpacity>
             </View>
+          </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter password"
-                  placeholderTextColor={colors.subtext}
-                  secureTextEntry={!showPassword}
-                  textContentType="password"
-                  autoComplete="password"
-                />
-                <TouchableOpacity
-                  style={styles.passwordToggle}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Text style={styles.passwordToggleText}>
-                    {showPassword ? '🙈' : '👁️'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Test Credentials Help */}
-            {isTestMode && (
-              <View style={styles.helpContainer}>
-                <Text style={styles.helpTitle}>Valid Test Credentials:</Text>
-                <Text style={styles.helpText}>• test@test.com / password123</Text>
-                <Text style={styles.helpText}>• admin@test.com / admin123</Text>
-                <Text style={styles.helpText}>• demo@demo.com / demo123</Text>
-              </View>
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>Sign In</Text>
             )}
-
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={handleTestLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={colors.bg} size="small" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In with Test Account</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={clearForm}
-              disabled={isLoading}
-            >
-              <Text style={styles.secondaryButtonText}>Clear Form</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Microsoft Login */}
-        {hasInteractiveLogin && (
-          <View style={styles.form}>
-            {hasUsernamePassword && <View style={styles.divider} />}
-            
-            <Text style={styles.sectionTitle}>Microsoft Sign-In</Text>
-            
-            <TouchableOpacity
-              style={[styles.button, styles.microsoftButton]}
-              onPress={handleMSALLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <Text style={styles.microsoftIcon}>🏢</Text>
-                  <Text style={styles.microsoftButtonText}>Continue with Microsoft</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+          </TouchableOpacity>
+        </View>
 
         {/* Error Display */}
         {error && (
@@ -204,7 +129,7 @@ export default function LoginScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Secure authentication powered by {isTestMode ? 'Test Mode' : 'Microsoft Azure'}
+            Secure Business Management Platform
           </Text>
         </View>
       </ScrollView>
@@ -220,156 +145,95 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
   logo: {
-    fontSize: 60,
-    marginBottom: 10,
+    fontSize: 64,
+    marginBottom: 12,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 5,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: colors.subtext,
-    marginBottom: 10,
-  },
-  providerInfo: {
-    backgroundColor: colors.panel,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  providerText: {
     textAlign: 'center',
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 14,
   },
   form: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 15,
-    textAlign: 'center',
+    marginBottom: 24,
   },
   inputGroup: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 5,
+    marginBottom: 8,
   },
   input: {
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
+    minHeight: 52,
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: 50,
+    paddingRight: 52,
   },
   passwordToggle: {
     position: 'absolute',
-    right: 12,
-    top: 12,
+    right: 16,
+    top: 16,
     padding: 4,
   },
   passwordToggleText: {
-    fontSize: 16,
-  },
-  helpContainer: {
-    backgroundColor: colors.panel,
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  helpTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: 13,
-    color: colors.subtext,
-    marginBottom: 2,
+    fontSize: 18,
   },
   button: {
-    borderRadius: 8,
-    padding: 15,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginTop: 8,
+    minHeight: 52,
   },
   primaryButton: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryButtonText: {
-    color: colors.subtext,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  microsoftButton: {
-    backgroundColor: '#0078d4',
-    flexDirection: 'row',
-  },
-  microsoftIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  microsoftButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 20,
-  },
   errorContainer: {
-    backgroundColor: '#ffebee',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: 'rgba(234, 67, 53, 0.1)',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#ffcdd2',
+    borderColor: 'rgba(234, 67, 53, 0.2)',
   },
   errorText: {
-    color: '#c62828',
+    color: '#EA4335',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 8,
@@ -378,17 +242,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   errorDismissText: {
-    color: '#c62828',
+    color: '#EA4335',
     fontSize: 12,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
   footer: {
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 32,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.subtext,
     textAlign: 'center',
   },

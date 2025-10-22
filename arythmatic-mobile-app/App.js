@@ -61,11 +61,21 @@ const AppContent = () => {
   };
 
   // Create a navigation prop to pass to screens
-  const createNavigationProp = () => {
+  const createNavigationProp = (screenName) => {
     return {
-      navigate: (screenName, params) => {
-        if (screenName === 'Interactions') {
+      navigate: (targetScreen, params) => {
+        if (targetScreen === 'Interactions') {
           navigateToInteractions(params.repId, params.repName);
+        }
+      },
+      goBack: () => {
+        // Handle navigation back based on current screen
+        if (currentScreen === 'Business') {
+          if (businessScreen === 'Interactions') {
+            navigateBackToSalesReps();
+          } else {
+            setCurrentScreen('Dashboard');
+          }
         }
       }
     };
@@ -183,29 +193,36 @@ const AppContent = () => {
             {currentScreen === "Dashboard" && <DashboardScreen />}
             {currentScreen === "Business" && businessScreen === "SalesReps" && (
               <SalesRepsScreen 
-                navigation={createNavigationProp()} 
+                navigation={createNavigationProp('SalesReps')} 
                 onNavigateToInteractions={navigateToInteractions}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Customers" && (
-              <CustomerScreen />
+              <CustomerScreen 
+                navigation={createNavigationProp('Customers')}
+              />
             )}
             {currentScreen === "Business" && businessScreen === "Products" && (
-              <ProductsScreen />
+              <ProductsScreen 
+                navigation={createNavigationProp('Products')}
+              />
             )}
             {currentScreen === "Business" && businessScreen === "Interactions" && (
               <InteractionsScreen 
-                navigation={createNavigationProp()}
+                navigation={createNavigationProp('Interactions')}
                 onBack={navigateBackToSalesReps}
                 initialRepId={navigationParams?.repId}
                 initialRepName={navigationParams?.repName}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Invoices" && (
-              <InvoicesScreen />
+              <InvoicesScreen 
+                navigation={createNavigationProp('Invoices')}
+              />
             )}
             {currentScreen === "Business" && businessScreen === "Payments" && (
               <PaymentsScreen 
+                navigation={createNavigationProp('Payments')}
                 onNavigateToDetails={navigateToPaymentDetails}
               />
             )}

@@ -40,10 +40,7 @@ export default function DashboardScreen() {
     { label: "This Year", value: "This Year", key: "date_year" },
   ]);
 
-  // Expand states for "View All"
-  const [showAllProducts, setShowAllProducts] = useState(false);
-  const [showAllReps, setShowAllReps] = useState(false);
-  const [showAllActivities, setShowAllActivities] = useState(false);
+  // Remove view all states - keep simple mobile interface
 
   // Analytics hooks - matching web app
   const {
@@ -64,13 +61,7 @@ export default function DashboardScreen() {
     Alert.alert("Dashboard Refreshed", "Your analytics data has been updated!");
   }, [refresh]);
 
-  // Toggle functions with useCallback
-  const toggleProducts = useCallback(() =>
-    setShowAllProducts(prev => !prev), []);
-  const toggleReps = useCallback(() =>
-    setShowAllReps(prev => !prev), []);
-  const toggleActivities = useCallback(() =>
-    setShowAllActivities(prev => !prev), []);
+  // Removed toggle functions for cleaner mobile interface
 
   // Handle dropdown conflicts - close one when other opens
   const handleCurrencyOpen = useCallback((open) => {
@@ -164,40 +155,32 @@ export default function DashboardScreen() {
 />
 
         {/* Top Products */}
-       <DashboardPanel
-  title="Top Products"
-  showAll={showAllProducts}
-  onToggle={toggleProducts}
->
-  {productPerformance.length === 0 && !loading ? (
-    <Text style={styles.noDataText}>No product data available</Text>
-  ) : (
-    <FlatList
-      data={showAllProducts ? productPerformance : productPerformance.slice(0, 5)}
-      renderItem={({ item }) => (
-        <View style={styles.productCard}>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productRevenue}>{item.revenue}</Text>
-        </View>
-      )}
-      keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-      scrollEnabled={false}
-      contentContainerStyle={styles.cardList}
-    />
-  )}
-</DashboardPanel>
+        <DashboardPanel title="Top Products">
+          {productPerformance.length === 0 && !loading ? (
+            <Text style={styles.noDataText}>No product data available</Text>
+          ) : (
+            <FlatList
+              data={productPerformance.slice(0, 5)}
+              renderItem={({ item }) => (
+                <View style={styles.productCard}>
+                  <Text style={styles.productName}>{item.name}</Text>
+                  <Text style={styles.productRevenue}>{item.revenue}</Text>
+                </View>
+              )}
+              keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+              scrollEnabled={false}
+              contentContainerStyle={styles.cardList}
+            />
+          )}
+        </DashboardPanel>
 
         {/* Top Sales Reps */}
-        <DashboardPanel
-          title="Top Sales Reps"
-          showAll={showAllReps}
-          onToggle={toggleReps}
-        >
+        <DashboardPanel title="Top Sales Reps">
           {salesRepPerformance.length === 0 && !loading ? (
             <Text style={styles.noDataText}>No sales rep data available</Text>
           ) : (
             <FlatList
-              data={showAllReps ? salesRepPerformance : salesRepPerformance.slice(0, 5)}
+              data={salesRepPerformance.slice(0, 5)}
               renderItem={({ item }) => <RepCard rep={item} />}
               keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
               scrollEnabled={false}
@@ -207,16 +190,12 @@ export default function DashboardScreen() {
         </DashboardPanel>
 
         {/* Recent Activity */}
-        <DashboardPanel
-          title="Recent Activity"
-          showAll={showAllActivities}
-          onToggle={toggleActivities}
-        >
+        <DashboardPanel title="Recent Activity">
           {recentActivities.length === 0 && !loading ? (
             <Text style={styles.noDataText}>No recent activity</Text>
           ) : (
             <FlatList
-              data={showAllActivities ? recentActivities : recentActivities.slice(0, 8)}
+              data={recentActivities.slice(0, 6)}
               renderItem={({ item }) => <ActivityItem activity={item} />}
               keyExtractor={(item) => item.id}
               scrollEnabled={false}
