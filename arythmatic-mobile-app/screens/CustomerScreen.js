@@ -282,13 +282,13 @@ export default function CustomerScreen({ navigation }) {
         {pagination.totalCount > 0 && (
           <View style={styles.paginationInfo}>
             <Text style={styles.paginationInfoText}>
-              📄 Page {pagination.currentPage} of {pagination.totalPages}
+              Page {pagination.currentPage} of {pagination.totalPages}
             </Text>
             <Text style={styles.paginationInfoSubtext}>
               Showing {customers.length} customers • Total: {pagination.totalCount}
             </Text>
             <Text style={styles.paginationInfoDetail}>
-              🔧 Simple API pagination (whatever API returns)
+              Simple API pagination (whatever API returns)
             </Text>
           </View>
         )}
@@ -344,7 +344,7 @@ export default function CustomerScreen({ navigation }) {
         {customers.length > 0 && (
           <View style={styles.customersSummary}>
             <Text style={styles.customersSummaryText}>
-              ✅ {customers.length} customers on this page
+              {customers.length} customers on this page
             </Text>
             <Text style={styles.customersSummaryDetail}>
               First: {customers[0]?.displayName}

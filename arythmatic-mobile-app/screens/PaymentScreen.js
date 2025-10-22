@@ -462,7 +462,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               style={styles.filterButton} 
               onPress={toggleFilters}
             >
-              <Text style={styles.filterButtonText}>🔍 Filters</Text>
+              <Text style={styles.filterButtonText}>Filters</Text>
             </TouchableOpacity>
           </View>
         </View>

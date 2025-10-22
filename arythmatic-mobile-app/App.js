@@ -183,7 +183,7 @@ const AppContent = () => {
                 <Text style={styles.userProvider}>{isTestMode ? 'Test' : isMSAL ? 'MSAL' : 'Auth'}</Text>
               </View>
               <TouchableOpacity style={styles.profileBtn} onPress={signOut}>
-                <Text style={styles.profileIcon}>🚪</Text>
+                <Text style={styles.profileIcon}>●●●</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -249,24 +249,29 @@ export default function App() {
 const styles = StyleSheet.create({
   contentHeader: {
     paddingTop: 0,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: colors.bg,
     borderBottomWidth: 1,
     borderColor: colors.border,
-    height: 50,
+    height: 60,
+    minHeight: 60,
   },
   menuButton: {
     marginRight: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: colors.primary,
-    borderRadius: 6,
+    borderRadius: 8,
+    minWidth: 48,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  breadcrumb: { color: "#fff", fontSize: 15, fontWeight: "600", flex: 1 },
+  breadcrumb: { color: "#fff", fontSize: 14, fontWeight: "600", flex: 1, marginHorizontal: 8 },
   backButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -299,14 +304,16 @@ const styles = StyleSheet.create({
     color: colors.subtext,
   },
   profileBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
+    minWidth: 44,
+    minHeight: 44,
   },
-  profileIcon: { fontSize: 15, color: colors.text, fontWeight: "600" },
+  profileIcon: { fontSize: 12, color: colors.text, fontWeight: "600", letterSpacing: 1 },
 });

@@ -74,7 +74,7 @@ export default function LoginScreen() {
 
         {/* Test Credentials Info */}
         <View style={styles.testInfo}>
-          <Text style={styles.testInfoTitle}>📋 Test Credentials</Text>
+          <Text style={styles.testInfoTitle}>Test Credentials</Text>
           <Text style={styles.testInfoText}>• admin@test.com / admin123</Text>
           <Text style={styles.testInfoText}>• test@test.com / password123</Text>
           <Text style={styles.testInfoText}>• demo@demo.com / demo123</Text>

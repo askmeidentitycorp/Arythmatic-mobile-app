@@ -74,7 +74,7 @@ export default function Sidebar({
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {/* ✅ Dashboard */}
         <SidebarItem
-          icon="📊"
+          icon="⬜"
           label="Dashboard"
           active={currentScreen === "Dashboard"}
           onPress={() => handleNavigation("Dashboard")}
@@ -93,7 +93,7 @@ export default function Sidebar({
 
         {/* ✅ WhatsApp CRM */}
         <SidebarItem
-          icon="💬"
+          icon="●"
           label="WhatsApp CRM"
           active={currentScreen === "WhatsAppCRM"}
           onPress={() => handleNavigation("WhatsAppCRM")}
@@ -116,12 +116,12 @@ function BusinessGroup({
   const [open, setOpen] = useState(true);
 
   const items = [
-    { key: "SalesReps", icon: "👤", label: "Sales Reps" },
-    { key: "Customers", icon: "📇", label: "Customers" },
-    { key: "Products", icon: "📦", label: "Products" },
-    { key: "Interactions", icon: "📞", label: "Interactions" },
-    { key: "Invoices", icon: "🧾", label: "Invoices" },
-    { key: "Payments", icon: "💳", label: "Payments" },
+    { key: "SalesReps", icon: "U", label: "Sales Reps" },
+    { key: "Customers", icon: "C", label: "Customers" },
+    { key: "Products", icon: "P", label: "Products" },
+    { key: "Interactions", icon: "I", label: "Interactions" },
+    { key: "Invoices", icon: "N", label: "Invoices" },
+    { key: "Payments", icon: "$", label: "Payments" },
   ];
 
   return (
@@ -131,7 +131,7 @@ function BusinessGroup({
         style={styles.groupRow}
         onPress={() => setOpen((o) => !o)}
       >
-        <Text style={styles.groupIcon}>💼</Text>
+        <Text style={styles.groupIcon}>B</Text>
         {menuOpen && (
           <>
             <Animated.Text

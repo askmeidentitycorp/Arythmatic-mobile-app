@@ -64,7 +64,7 @@ export default function DashboardScreen() {
 
   // Update data when currency or date range changes
   useEffect(() => {
-    console.log('📅 Analytics filters changed:', { currency, dateRange });
+    console.log('Analytics filters changed:', { currency, dateRange });
   }, [currency, dateRange]);
 
   // Error state - Show error but continue with available data
@@ -74,7 +74,7 @@ export default function DashboardScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorTitle}>
-          ⚠️ Dashboard Error
+          Dashboard Error
         </Text>
         <Text style={styles.errorText}>
           {error}
@@ -117,7 +117,7 @@ export default function DashboardScreen() {
         {/* Error Banner - Show if there's an error but we have data */}
         {error && analyticsData && (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerIcon}>⚠️</Text>
+            <Text style={styles.errorBannerIcon}>!</Text>
             <View style={styles.errorBannerContent}>
               <Text style={styles.errorBannerTitle}>Data Loading Issue</Text>
               <Text style={styles.errorBannerText}>
