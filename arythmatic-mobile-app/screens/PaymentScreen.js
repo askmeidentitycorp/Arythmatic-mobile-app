@@ -344,40 +344,117 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   }, []);
 
   /* ---------- Payment Actions ---------- */
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+
   const handleNextPayment = useCallback((payment) => {
     console.log("💳 Payment action menu clicked:", payment.id);
-    
-    // Show action menu for the payment
+    setSelectedPayment(payment);
+    setShowActionSheet(true);
+  }, []);
+
+  const handleCloseActionSheet = useCallback(() => {
+    setShowActionSheet(false);
+    setTimeout(() => setSelectedPayment(null), 300);
+  }, []);
+
+  const handleViewPayment = useCallback(() => {
+    console.log('View payment:', selectedPayment?.id);
+    handleCloseActionSheet();
+    if (onNavigateToDetails) {
+      onNavigateToDetails(selectedPayment?.id);
+    } else if (navigation) {
+      navigation.navigate('PaymentDetails', { paymentId: selectedPayment?.id });
+    }
+  }, [selectedPayment, onNavigateToDetails, navigation, handleCloseActionSheet]);
+
+  const handleEditPayment = useCallback(() => {
+    console.log('Edit payment:', selectedPayment?.id);
+    handleCloseActionSheet();
+    Alert.alert('Edit Payment', 'Edit payment functionality will be implemented here.');
+  }, [selectedPayment, handleCloseActionSheet]);
+
+  const handleProcessPayment = useCallback(() => {
+    console.log('Process payment:', selectedPayment?.id);
+    handleCloseActionSheet();
     Alert.alert(
-      'Payment Actions',
-      `Payment: ${payment.amountFormatted}\nStatus: ${payment.status}\nInvoice: ${payment.invoice_number}`,
+      'Process Payment',
+      `Process payment of ${selectedPayment?.amountFormatted}?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'View Details',
+          text: 'Process',
           onPress: () => {
-            console.log('View details for:', payment.id);
-            if (onNavigateToDetails) {
-              onNavigateToDetails(payment.id);
-            } else if (navigation) {
-              // Navigate to payment details screen
-              navigation.navigate('PaymentDetails', { paymentId: payment.id });
-            }
+            Alert.alert('Success', 'Payment processed successfully!');
           }
-        },
-        {
-          text: 'View Invoice',
-          onPress: () => {
-            console.log('View invoice:', payment.invoice);
-            Alert.alert('Invoice', `Invoice ID: ${payment.invoice}`);
-          }
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel'
         }
       ]
     );
-  }, [onNavigateToDetails, navigation]);
+  }, [selectedPayment, handleCloseActionSheet]);
+
+  const handleVoidPayment = useCallback(() => {
+    console.log('Void payment:', selectedPayment?.id);
+    handleCloseActionSheet();
+    Alert.alert(
+      'Void Payment',
+      `Are you sure you want to void this payment of ${selectedPayment?.amountFormatted}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Void',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Success', 'Payment voided successfully!');
+          }
+        }
+      ]
+    );
+  }, [selectedPayment, handleCloseActionSheet]);
+
+  const handleRefundPayment = useCallback(() => {
+    console.log('Refund payment:', selectedPayment?.id);
+    handleCloseActionSheet();
+    Alert.alert(
+      'Refund Payment',
+      `Refund ${selectedPayment?.amountFormatted} to customer?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Refund',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Success', 'Refund initiated successfully!');
+          }
+        }
+      ]
+    );
+  }, [selectedPayment, handleCloseActionSheet]);
+
+  const handleAuditHistory = useCallback(() => {
+    console.log('View audit history:', selectedPayment?.id);
+    handleCloseActionSheet();
+    Alert.alert('Audit History', 'Payment audit history will be displayed here.');
+  }, [selectedPayment, handleCloseActionSheet]);
+
+  const handleDeletePayment = useCallback(() => {
+    console.log('Delete payment:', selectedPayment?.id);
+    handleCloseActionSheet();
+    Alert.alert(
+      'Delete Payment',
+      `Are you sure you want to delete this payment? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Success', 'Payment deleted successfully!');
+            fetchPayments(); // Refresh the list
+          }
+        }
+      ]
+    );
+  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
 
   const toggleFilters = useCallback(() => {
     setShowFilters(prev => !prev);
@@ -614,6 +691,100 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             }
           />
         )}
+
+        {/* Payment Action Sheet Modal */}
+        <Modal
+          visible={showActionSheet}
+          transparent
+          animationType="fade"
+          onRequestClose={handleCloseActionSheet}
+          statusBarTranslucent
+        >
+          <Pressable style={styles.actionSheetOverlay} onPress={handleCloseActionSheet}>
+            <View style={styles.actionSheetContainer} onStartShouldSetResponder={() => true}>
+              {/* Payment Info Header */}
+              {selectedPayment && (
+                <View style={styles.actionSheetHeader}>
+                  <View style={styles.actionSheetHeaderRow}>
+                    <Text style={styles.actionSheetAmount}>{selectedPayment.amountFormatted}</Text>
+                    <StatusBadge status={selectedPayment.status} />
+                  </View>
+                  <Text style={styles.actionSheetInvoice}>Invoice: {selectedPayment.invoice_number}</Text>
+                </View>
+              )}
+
+              {/* Action Buttons */}
+              <View style={styles.actionSheetActions}>
+                {/* View Payment */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleViewPayment}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>👁</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>View Payment</Text>
+                </TouchableOpacity>
+
+                {/* Edit Payment */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleEditPayment}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>✏️</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>Edit Payment</Text>
+                </TouchableOpacity>
+
+                {/* Process Payment */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleProcessPayment}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>✓</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>Process Payment</Text>
+                </TouchableOpacity>
+
+                {/* Void Payment */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleVoidPayment}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>⊘</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>Void Payment</Text>
+                </TouchableOpacity>
+
+                {/* Refund Payment */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleRefundPayment}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>↩</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>Refund Payment</Text>
+                </TouchableOpacity>
+
+                {/* Audit History */}
+                <TouchableOpacity style={styles.actionButton} onPress={handleAuditHistory}>
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>📋</Text>
+                  </View>
+                  <Text style={styles.actionButtonText}>Audit History</Text>
+                </TouchableOpacity>
+
+                {/* Delete */}
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.actionButtonDanger]} 
+                  onPress={handleDeletePayment}
+                >
+                  <View style={styles.actionIconContainer}>
+                    <Text style={styles.actionIcon}>🗑</Text>
+                  </View>
+                  <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Cancel Button */}
+              <TouchableOpacity 
+                style={styles.actionSheetCancelButton} 
+                onPress={handleCloseActionSheet}
+              >
+                <Text style={styles.actionSheetCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -1042,5 +1213,98 @@ const styles = StyleSheet.create({
   pickerOptionText: {
     color: colors.text,
     fontSize: 16,
+  },
+
+  // Action Sheet Styles
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetContainer: {
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingHorizontal: 16,
+    maxHeight: height * 0.85,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  actionSheetHeader: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: 16,
+  },
+  actionSheetHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionSheetAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  actionSheetInvoice: {
+    fontSize: 14,
+    color: colors.subtext,
+  },
+  actionSheetActions: {
+    gap: 0,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  actionButtonDanger: {
+    backgroundColor: 'rgba(234, 67, 53, 0.05)',
+  },
+  actionIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  actionIcon: {
+    fontSize: 16,
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+    flex: 1,
+  },
+  actionButtonTextDanger: {
+    color: '#EA4335',
+  },
+  actionSheetCancelButton: {
+    marginTop: 16,
+    paddingVertical: 16,
+    backgroundColor: colors.panel,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionSheetCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
   },
 });
