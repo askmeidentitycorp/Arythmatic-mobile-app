@@ -189,6 +189,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
   // Fetch payments from API
   const fetchPayments = useCallback(async () => {
+    console.log('\n🔵 ========== PAYMENT SCREEN: FETCHING DATA ==========');
     setLoading(true);
     setError(null);
 
@@ -198,7 +199,9 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         page_size: 1000, // Get all payments for proper calculation
       };
       
+      console.log('🔵 Calling paymentService.getAll with params:', params);
       const response = await paymentService.getAll(params);
+      console.log('🔵 Raw API Response:', JSON.stringify(response, null, 2));
       
       // Transform API response - Map actual API field names
       const transformedPayments = (response.results || []).map(payment => ({
@@ -220,9 +223,17 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       }));
       
+      console.log('🔵 Transformed Payments Count:', transformedPayments.length);
+      if (transformedPayments.length > 0) {
+        console.log('🔵 First Payment Sample:', JSON.stringify(transformedPayments[0], null, 2));
+      }
+      console.log('🔵 ========== END PAYMENT FETCH ==========\n');
+      
       setPayments(transformedPayments);
     } catch (err) {
-      console.error('Payment fetch error:', err);
+      console.error('❌ PAYMENT FETCH ERROR:', err);
+      console.error('❌ Error Message:', err.message);
+      console.error('❌ Error Stack:', err.stack);
       setError(err.message || 'Failed to fetch payments');
     } finally {
       setLoading(false);
