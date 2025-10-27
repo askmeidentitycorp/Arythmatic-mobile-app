@@ -204,24 +204,34 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       console.log('🔵 Raw API Response:', JSON.stringify(response, null, 2));
       
       // Transform API response - Map actual API field names
-      const transformedPayments = (response.results || []).map(payment => ({
-        ...payment,
-        transaction_id: payment.transaction_id || payment.id,
-        // Extract customer name from customer_details object's displayName
-        customerName: payment.customer_details?.displayName || 
-                     payment.customer_details?.firstName + ' ' + (payment.customer_details?.lastname || '') || 
-                     payment.customer?.display_name || 
-                     payment.customer?.name || 
-                     'Unknown Customer',
-        // Normalize status to Title Case
-        status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
-        // Map payment_method or paymentMethod
-        payment_method: payment.payment_method || payment.paymentMethod || 'N/A',
-        // Map invoice_number
-        invoice_number: payment.invoice_number || payment.invoice || 'N/A',
-        // Format amount with currency symbol
-        amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      }));
+      const transformedPayments = (response.results || []).map(payment => {
+        // FIXED: API doesn't return customer details in payment endpoint
+        // We only have created_by (UUID), so we show "Customer" as placeholder
+        // To get actual customer names, we'd need to:
+        // 1. Fetch invoice details using payment.invoice UUID
+        // 2. Get customer info from the invoice
+        // 3. Or fetch from /users endpoint using payment.created_by
+        
+        const customerName = payment.customer_name || 
+                           payment.customer?.name || 
+                           payment.customer?.display_name || 
+                           'Customer'; // Generic placeholder since API doesn't include this
+        
+        return {
+          ...payment,
+          transaction_id: payment.transaction_id || payment.id,
+          customerName,
+          // Normalize status to Title Case
+          status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
+          // Map payment_method or paymentMethod
+          payment_method: payment.payment_method || payment.paymentMethod || 'N/A',
+          // Map invoice_number - use last 8 chars of UUID for display
+          invoice_number: payment.invoice_number || 
+                         (payment.invoice ? payment.invoice.slice(-8) : 'N/A'),
+          // Format amount with currency symbol
+          amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        };
+      });
       
       console.log('🔵 Transformed Payments Count:', transformedPayments.length);
       if (transformedPayments.length > 0) {
@@ -244,27 +254,22 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     fetchPayments();
   }, [fetchPayments]);
 
-  /* ---------- KPI Metrics - Matching Web Dashboard EXACTLY ---------- */
+  /* ---------- KPI Metrics - Matching Dashboard Logic EXACTLY ---------- */
   const metrics = useMemo(() => {
     const totalPayments = payments.length;
     
-    // Sum only USD payments (no conversion - web shows pure USD totals)
-    const usdPayments = payments.filter(p => p.currency === 'USD');
-    
-    const totalValue = usdPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-    
-    const successful = usdPayments
-      .filter(p => p.status === 'Success')
-      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-    
-    const failed = usdPayments
-      .filter(p => p.status === 'Failed' || p.status === 'Voided')
-      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-    
-    // Calculate currency breakdown for display
+    // FIXED: Calculate totals for ALL currencies (like Dashboard)
+    // Count by currency and calculate totals
     const currencyBreakdown = {};
+    let totalValueAllCurrencies = 0;
+    let successfulAllCurrencies = 0;
+    let failedAllCurrencies = 0;
+    
     payments.forEach(payment => {
       const curr = payment.currency || 'USD';
+      const amt = parseFloat(payment.amount) || 0;
+      
+      // Initialize currency if not exists
       if (!currencyBreakdown[curr]) {
         currencyBreakdown[curr] = {
           count: 0,
@@ -273,22 +278,37 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           failed: 0,
         };
       }
-      const amt = parseFloat(payment.amount) || 0;
+      
+      // Add to currency breakdown
       currencyBreakdown[curr].count++;
       currencyBreakdown[curr].total += amt;
       
+      // Add to overall totals (without conversion - show multi-currency)
+      totalValueAllCurrencies += amt;
+      
       if (payment.status === 'Success') {
         currencyBreakdown[curr].successful += amt;
+        successfulAllCurrencies += amt;
       } else if (payment.status === 'Failed' || payment.status === 'Voided') {
         currencyBreakdown[curr].failed += amt;
+        failedAllCurrencies += amt;
       }
     });
     
+    // Format display values - show primary currency (USD) if exists, otherwise show "Mixed"
+    const primaryCurrency = currencyBreakdown['USD'] ? 'USD' : Object.keys(currencyBreakdown)[0] || 'USD';
+    const symbol = primaryCurrency === 'INR' ? '₹' : primaryCurrency === 'USD' ? '$' : primaryCurrency === 'EUR' ? '€' : primaryCurrency === 'GBP' ? '£' : '';
+    
+    // Use USD values if available, otherwise show mixed
+    const displayValue = currencyBreakdown['USD'] ? currencyBreakdown['USD'].total : totalValueAllCurrencies;
+    const displaySuccess = currencyBreakdown['USD'] ? currencyBreakdown['USD'].successful : successfulAllCurrencies;
+    const displayFailed = currencyBreakdown['USD'] ? currencyBreakdown['USD'].failed : failedAllCurrencies;
+    
     return {
       total: totalPayments,
-      totalValue: `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      successful: `$${successful.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      failed: `$${failed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      totalValue: `${symbol}${displayValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${Object.keys(currencyBreakdown).length > 1 ? ' +' : ''}`,
+      successful: `${symbol}${displaySuccess.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      failed: `${symbol}${displayFailed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       currencyBreakdown,
     };
   }, [payments]);
@@ -325,11 +345,39 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
   /* ---------- Payment Actions ---------- */
   const handleNextPayment = useCallback((payment) => {
-    console.log("Next button clicked for payment:", payment);
-    if (onNavigateToDetails) {
-      onNavigateToDetails(payment.id);
-    }
-  }, [onNavigateToDetails]);
+    console.log("💳 Payment action menu clicked:", payment.id);
+    
+    // Show action menu for the payment
+    Alert.alert(
+      'Payment Actions',
+      `Payment: ${payment.amountFormatted}\nStatus: ${payment.status}\nInvoice: ${payment.invoice_number}`,
+      [
+        {
+          text: 'View Details',
+          onPress: () => {
+            console.log('View details for:', payment.id);
+            if (onNavigateToDetails) {
+              onNavigateToDetails(payment.id);
+            } else if (navigation) {
+              // Navigate to payment details screen
+              navigation.navigate('PaymentDetails', { paymentId: payment.id });
+            }
+          }
+        },
+        {
+          text: 'View Invoice',
+          onPress: () => {
+            console.log('View invoice:', payment.invoice);
+            Alert.alert('Invoice', `Invoice ID: ${payment.invoice}`);
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  }, [onNavigateToDetails, navigation]);
 
   const toggleFilters = useCallback(() => {
     setShowFilters(prev => !prev);
