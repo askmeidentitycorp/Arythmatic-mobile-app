@@ -172,7 +172,10 @@ export default function InvoiceScreen({ navigation }) {
     setEditingId(invoice.id);
     setForm({
       invoiceNumber: invoice.invoiceNumber || invoice.invoice_number || "",
-      customer: invoice.customer || invoice.customer_details?.name || "",
+      customer: invoice.customer_details?.displayName || 
+                invoice.customer_details?.firstName + ' ' + (invoice.customer_details?.lastname || '') ||
+                invoice.customer_details?.name || 
+                invoice.customer || "",
       status: invoice.status || "draft",
       currency: invoice.currency || "USD",
       dueDate: invoice.dueDate || invoice.due_date || "",
@@ -205,7 +208,7 @@ export default function InvoiceScreen({ navigation }) {
         
         Alert.alert(
           `Invoice #${invoice.invoiceNumber || invoice.invoice_number}`,
-          `Customer: ${invoice.customer || invoice.customer_details?.name || 'N/A'}\n` +
+          `Customer: ${invoice.customer_details?.displayName || invoice.customer_details?.firstName + ' ' + (invoice.customer_details?.lastname || '') || invoice.customer_details?.name || invoice.customer || 'N/A'}\n` +
           `Status: ${invoice.status || 'Unknown'}\n` +
           `Currency: ${invoice.currency || 'USD'}\n` +
           `Due Date: ${invoice.dueDate || invoice.due_date || 'N/A'}\n` +

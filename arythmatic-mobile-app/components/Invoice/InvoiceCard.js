@@ -82,6 +82,7 @@ const InvoiceCard = ({
   // Extract data with API field mapping
   const invoiceNumber = invoice.invoiceNumber || invoice.invoice_number || invoice.number || "—";
   const customerName = invoice.customer_details?.displayName || 
+                      invoice.customer_details?.firstName + ' ' + (invoice.customer_details?.lastname || '') || 
                       invoice.customer_details?.name || 
                       invoice.customer || 
                       "Unknown Customer";

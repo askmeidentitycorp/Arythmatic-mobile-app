@@ -133,30 +133,38 @@ export default function PaymentDetailsScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Payment Details</Text>
-          <View style={[
-            styles.statusContainer,
-            {
-              backgroundColor: payment.isOverdue ? 'rgba(234,67,53,0.15)' : 
-                               payment.status === 'Completed' ? 'rgba(49,199,106,0.12)' : 
-                               'rgba(244,183,64,0.15)',
-              borderColor: payment.isOverdue ? '#EA4335' : 
-                           payment.status === 'Completed' ? '#31C76A' : 
-                           '#F4B740',
-            }
-          ]}>
-            <Text style={[
-              styles.statusText,
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            style={styles.headerBackButton}
+            onPress={() => navigation?.goBack()}
+          >
+            <Text style={styles.headerBackButtonText}>‹</Text>
+          </TouchableOpacity>
+          <View style={styles.header}>
+            <Text style={styles.title}>Payment Details</Text>
+            <View style={[
+              styles.statusContainer,
               {
-                color: payment.isOverdue ? '#EA4335' : 
-                      payment.status === 'Completed' ? '#31C76A' : 
-                      '#F4B740',
+                backgroundColor: payment.isOverdue ? 'rgba(234,67,53,0.15)' : 
+                                 payment.status === 'Completed' ? 'rgba(49,199,106,0.12)' : 
+                                 'rgba(244,183,64,0.15)',
+                borderColor: payment.isOverdue ? '#EA4335' : 
+                             payment.status === 'Completed' ? '#31C76A' : 
+                             '#F4B740',
               }
             ]}>
-              {payment.isOverdue ? "Overdue" : payment.status}
-            </Text>
+              <Text style={[
+                styles.statusText,
+                {
+                  color: payment.isOverdue ? '#EA4335' : 
+                        payment.status === 'Completed' ? '#31C76A' : 
+                        '#F4B740',
+                }
+              ]}>
+                {payment.isOverdue ? "Overdue" : payment.status}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -454,11 +462,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  headerBackButton: {
+    backgroundColor: colors.panel,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  headerBackButtonText: {
+    fontSize: 24,
+    color: colors.text,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
   },
   title: {
     color: colors.text,

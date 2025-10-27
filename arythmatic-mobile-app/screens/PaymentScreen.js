@@ -1,5 +1,5 @@
 // screens/PaymentScreen.js
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,136 +11,23 @@ import {
   Pressable,
   Platform,
   UIManager,
-  LayoutAnimation,
-  Animated,
   Alert,
-  KeyboardAvoidingView,
-  Keyboard,
-  TouchableWithoutFeedback,
   Dimensions,
   FlatList,
   ActivityIndicator,
+  Share,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
-import { usePayments, usePaymentMutations } from '../hooks/usePayments';
-import { usePaymentAnalytics } from '../hooks/usePaymentAnalytics';
+import { paymentService } from '../services/paymentService';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-/* ---------- Mock Payment Data ---------- */
-const INITIAL_PAYMENTS = [
-  {
-    id: "P-001",
-    customerId: "c-1001",
-    customerName: "Lanry R Gala",
-    amount: 1000.00, // Store as number
-    amountFormatted: "₹1,000.00", // Formatted for display
-    date: "2025-09-26",
-    status: "Completed",
-    method: "Credit Card",
-    invoice: "INV-952731-628",
-    description: "Premium Subscription for our cloud services package including 24/7 support and advanced analytics.",
-    isOverdue: false,
-  },
-  {
-    id: "P-002",
-    customerId: "c-1002",
-    customerName: "Acme Corp",
-    amount: 2500.00,
-    amountFormatted: "₹2,500.00",
-    date: "2025-09-25",
-    status: "Completed",
-    method: "Bank Transfer",
-    invoice: "INV-952731-629",
-    description: "Enterprise Plan annual subscription with priority support and custom integrations.",
-    isOverdue: false,
-  },
-  {
-    id: "P-003",
-    customerId: "c-1003",
-    customerName: "John Doe",
-    amount: 750.00,
-    amountFormatted: "₹750.00",
-    date: "2025-09-24",
-    status: "Pending",
-    method: "PayPal",
-    invoice: "INV-952731-630",
-    description: "Standard Plan quarterly subscription with basic features and email support.",
-    isOverdue: true,
-  },
-  {
-    id: "P-004",
-    customerId: "c-1004",
-    customerName: "Global Tech",
-    amount: 3200.00,
-    amountFormatted: "₹3,200.00",
-    date: "2025-09-23",
-    status: "Completed",
-    method: "Credit Card",
-    invoice: "INV-952731-631",
-    description: "Enterprise Plan annual subscription with premium features and dedicated account manager.",
-    isOverdue: false,
-  },
-  {
-    id: "P-005",
-    customerId: "c-1005",
-    customerName: "Sarah Johnson",
-    amount: 110.00,
-    amountFormatted: "¥110.00",
-    date: "2025-09-20",
-    status: "Pending",
-    method: "Bank Transfer",
-    invoice: "INV-952731-632",
-    description: "Personal loan repayment for the month of September 2025.",
-    isOverdue: true,
-  },
-  {
-    id: "P-006",
-    customerId: "c-1006",
-    customerName: "Mike Wilson",
-    amount: 110.00,
-    amountFormatted: "¥110.00",
-    date: "2025-09-18",
-    status: "Pending",
-    method: "Credit Card",
-    invoice: "INV-952731-633",
-    description: "Personal loan repayment for the month of September 2025.",
-    isOverdue: true,
-  },
-  {
-    id: "P-007",
-    customerId: "c-1007",
-    customerName: "Emma Davis",
-    amount: 110.00,
-    amountFormatted: "¥110.00",
-    date: "2025-09-15",
-    status: "Pending",
-    method: "PayPal",
-    invoice: "INV-952731-634",
-    description: "Personal loan repayment for the month of September 2025.",
-    isOverdue: true,
-  },
-  {
-    id: "P-008",
-    customerId: "c-1008",
-    customerName: "Robert Brown",
-    amount: 110.00,
-    amountFormatted: "¥110.00",
-    date: "2025-09-10",
-    status: "Pending",
-    method: "Bank Transfer",
-    invoice: "INV-952731-635",
-    description: "Personal loan repayment for the month of September 2025.",
-    isOverdue: true,
-  },
-];
-
 /* ---------- Helper Components ---------- */
-const KPI = React.memo(({ label, value, color = "#9695D7" }) => {
+const KPI = React.memo(({ label, value, color = "#6B9AFF" }) => {
   return (
     <View style={styles.kpiBox}>
       <Text style={styles.kpiLabel}>{label}</Text>
@@ -151,11 +38,10 @@ const KPI = React.memo(({ label, value, color = "#9695D7" }) => {
 
 const StatusBadge = React.memo(({ status }) => {
   const config = {
-    "Completed": { bg: "rgba(49,199,106,0.12)", border: "#31C76A", text: "#31C76A" },
+    "Success": { bg: "rgba(49,199,106,0.12)", border: "#31C76A", text: "#31C76A" },
     "Pending": { bg: "rgba(244,183,64,0.15)", border: "#6b5221", text: "#F4B740" },
     "Failed": { bg: "rgba(234,67,53,0.12)", border: "#7a2e2a", text: "#EA4335" },
     "Voided": { bg: "rgba(167,174,192,0.1)", border: "#2a3450", text: "#A7AEC0" },
-    "Overdue": { bg: "rgba(234,67,53,0.15)", border: "#7a2e2a", text: "#EA4335" },
   };
   
   const style = config[status] || config["Pending"];
@@ -175,16 +61,16 @@ const StatusBadge = React.memo(({ status }) => {
   );
 });
 
-const PaymentCard = React.memo(({ payment, onNext, onRepay }) => {
+const PaymentCard = React.memo(({ payment, onNext }) => {
   return (
     <View style={styles.paymentCard}>
       <View style={styles.paymentHeader}>
         <View style={styles.paymentHeaderLeft}>
-          <Text style={styles.paymentId}>{payment.id}</Text>
+          <Text style={styles.paymentId}>{payment.transaction_id || payment.id}</Text>
           <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
         </View>
         <View style={styles.paymentHeaderRight}>
-          <StatusBadge status={payment.isOverdue ? "Overdue" : payment.status} />
+          <StatusBadge status={payment.status} />
           <TouchableOpacity 
             style={styles.moreButton}
             onPress={(e) => {
@@ -204,31 +90,17 @@ const PaymentCard = React.memo(({ payment, onNext, onRepay }) => {
         </View>
         <View style={styles.paymentRow}>
           <Text style={styles.paymentLabel}>Method:</Text>
-          <Text style={styles.paymentValue}>{payment.method}</Text>
+          <Text style={styles.paymentValue}>{payment.payment_method || 'N/A'}</Text>
         </View>
         <View style={styles.paymentRow}>
           <Text style={styles.paymentLabel}>Date:</Text>
-          <Text style={styles.paymentValue}>{payment.date}</Text>
+          <Text style={styles.paymentValue}>{payment.payment_date || payment.created}</Text>
         </View>
         <View style={styles.paymentRow}>
           <Text style={styles.paymentLabel}>Invoice:</Text>
-          <Text style={styles.paymentValue}>{payment.invoice}</Text>
+          <Text style={styles.paymentValue}>{payment.invoice_number || 'N/A'}</Text>
         </View>
       </View>
-      
-      {payment.isOverdue && (
-        <View style={styles.paymentFooter}>
-          <TouchableOpacity 
-            style={styles.repayButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onRepay && onRepay(payment);
-            }}
-          >
-            <Text style={styles.repayButtonText}>Process Payment</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 });
@@ -300,150 +172,153 @@ const DarkPicker = React.memo(({ selectedValue, onValueChange, items, placeholde
   );
 });
 
-/* ---------- Helper Components ---------- */
-const DetailRow = React.memo(({ label, value }) => (
-  <View style={styles.detailRow}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value}</Text>
-  </View>
-));
-
-const LabeledInput = React.memo(({ label, value, onChangeText, placeholder, editable = true, multiline, ...rest }) => {
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#9aa6bf"
-          editable={editable}
-          style={[styles.input, multiline && styles.inputMultiline]}
-          multiline={!!multiline}
-          {...rest}
-        />
-      </View>
-    </View>
-  );
-});
-
 /* ---------- Main Component ---------- */
 export default function PaymentScreen({ onNavigateToDetails, navigation }) {
-  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [apiFilters, setApiFilters] = useState({});
   const [localFilters, setLocalFilters] = useState({ 
     searchText: "", 
     status: "", 
     method: "",
-    isOverdue: false,
     dateRange: "",
     minAmount: "",
     maxAmount: ""
   });
 
-  // API hooks
-  const { payments, loading: paymentsLoading, error: paymentsError, refetch } = usePayments(apiFilters, 10);
-  const { analytics, loading: analyticsLoading, error: analyticsError, refresh: refreshAnalytics } = usePaymentAnalytics(apiFilters);
-  const { processPayment, refundPayment, voidPayment, loading: mutationLoading } = usePaymentMutations();
+  // Fetch payments from API
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  // Refresh handler for analytics
-  const handleRefresh = useCallback(() => {
-    refetch();
-    refreshAnalytics();
-  }, [refetch, refreshAnalytics]);
+    try {
+      const params = {
+        page: 1,
+        page_size: 1000, // Get all payments for proper calculation
+      };
+      
+      const response = await paymentService.getAll(params);
+      
+      // Transform API response - Map actual API field names
+      const transformedPayments = (response.results || []).map(payment => ({
+        ...payment,
+        transaction_id: payment.transaction_id || payment.id,
+        // Extract customer name from customer_details object's displayName
+        customerName: payment.customer_details?.displayName || 
+                     payment.customer_details?.firstName + ' ' + (payment.customer_details?.lastname || '') || 
+                     payment.customer?.display_name || 
+                     payment.customer?.name || 
+                     'Unknown Customer',
+        // Normalize status to Title Case
+        status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
+        // Map payment_method or paymentMethod
+        payment_method: payment.payment_method || payment.paymentMethod || 'N/A',
+        // Map invoice_number
+        invoice_number: payment.invoice_number || payment.invoice || 'N/A',
+        // Format amount with currency symbol
+        amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      }));
+      
+      setPayments(transformedPayments);
+    } catch (err) {
+      console.error('Payment fetch error:', err);
+      setError(err.message || 'Failed to fetch payments');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Combined loading state
-  const loading = paymentsLoading || analyticsLoading;
-  const error = paymentsError || analyticsError;
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
 
-  /* ---------- KPI Metrics from Analytics API ---------- */
+  /* ---------- KPI Metrics - Matching Web Dashboard EXACTLY ---------- */
   const metrics = useMemo(() => {
+    const totalPayments = payments.length;
+    
+    // Sum only USD payments (no conversion - web shows pure USD totals)
+    const usdPayments = payments.filter(p => p.currency === 'USD');
+    
+    const totalValue = usdPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    
+    const successful = usdPayments
+      .filter(p => p.status === 'Success')
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    
+    const failed = usdPayments
+      .filter(p => p.status === 'Failed' || p.status === 'Voided')
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    
+    // Calculate currency breakdown for display
+    const currencyBreakdown = {};
+    payments.forEach(payment => {
+      const curr = payment.currency || 'USD';
+      if (!currencyBreakdown[curr]) {
+        currencyBreakdown[curr] = {
+          count: 0,
+          total: 0,
+          successful: 0,
+          failed: 0,
+        };
+      }
+      const amt = parseFloat(payment.amount) || 0;
+      currencyBreakdown[curr].count++;
+      currencyBreakdown[curr].total += amt;
+      
+      if (payment.status === 'Success') {
+        currencyBreakdown[curr].successful += amt;
+      } else if (payment.status === 'Failed' || payment.status === 'Voided') {
+        currencyBreakdown[curr].failed += amt;
+      }
+    });
+    
     return {
-      total: analytics.totalPayments,
-      totalValue: analytics.totalValue,
-      successful: analytics.successful,
-      failed: analytics.failed,
-      pending: analytics.pending,
-      overdue: analytics.overdue,
+      total: totalPayments,
+      totalValue: `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      successful: `$${successful.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      failed: `$${failed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      currencyBreakdown,
     };
-  }, [analytics]);
+  }, [payments]);
 
   /* ---------- Filters ---------- */
-  // Apply local filtering on API results
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
-      // Text search
       const matchSearch = !localFilters.searchText || (
-        p.id?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
-        p.customerName?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
-        p.invoice?.toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
-        p.description?.toLowerCase().includes(localFilters.searchText.toLowerCase())
+        (p.transaction_id || '').toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+        (p.customerName || '').toLowerCase().includes(localFilters.searchText.toLowerCase()) ||
+        (p.invoice_number || '').toLowerCase().includes(localFilters.searchText.toLowerCase())
       );
       
-      // Amount range filtering (local only for instant feedback)
-      const amount = typeof p.amount === 'number' ? p.amount : parseFloat(p.amount) || 0;
+      const amount = parseFloat(p.amount) || 0;
       const matchMinAmount = !localFilters.minAmount || amount >= parseFloat(localFilters.minAmount);
       const matchMaxAmount = !localFilters.maxAmount || amount <= parseFloat(localFilters.maxAmount);
+      const matchStatus = !localFilters.status || p.status === localFilters.status;
+      const matchMethod = !localFilters.method || p.payment_method === localFilters.method;
       
-      return matchSearch && matchMinAmount && matchMaxAmount;
+      return matchSearch && matchMinAmount && matchMaxAmount && matchStatus && matchMethod;
     });
-  }, [payments, localFilters.searchText, localFilters.minAmount, localFilters.maxAmount]);
-
-  // Update API filters when local filters change (debounced)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const newApiFilters = {
-        status: localFilters.status || undefined,
-        method: localFilters.method || undefined,
-        isOverdue: localFilters.isOverdue || undefined,
-        dateRange: localFilters.dateRange || undefined,
-        minAmount: localFilters.minAmount ? parseFloat(localFilters.minAmount) : undefined,
-        maxAmount: localFilters.maxAmount ? parseFloat(localFilters.maxAmount) : undefined,
-      };
-      setApiFilters(newApiFilters);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [localFilters.status, localFilters.method, localFilters.isOverdue, localFilters.dateRange, localFilters.minAmount, localFilters.maxAmount]);
+  }, [payments, localFilters]);
 
   const clearFilters = useCallback(() => {
     setLocalFilters({ 
       searchText: "", 
       status: "", 
       method: "",
-      isOverdue: false,
       dateRange: "",
       minAmount: "",
       maxAmount: ""
     });
-    setApiFilters({});
   }, []);
 
   /* ---------- Payment Actions ---------- */
   const handleNextPayment = useCallback((payment) => {
     console.log("Next button clicked for payment:", payment);
-    // Navigate to payment details when the Next button is clicked
     if (onNavigateToDetails) {
       onNavigateToDetails(payment.id);
     }
   }, [onNavigateToDetails]);
-
-  const handleRepayPayment = useCallback(async (payment) => {
-    try {
-      await processPayment(payment.id);
-      Alert.alert(
-        "Payment Processed",
-        `Payment of ${payment.amountFormatted} for ${payment.customerName} has been processed.`,
-        [{ text: "OK" }]
-      );
-      // Refresh data after successful processing
-      refetch();
-      refreshAnalytics();
-    } catch (error) {
-      Alert.alert("Error", `Failed to process payment: ${error.message}`);
-    }
-  }, [processPayment, refetch, refreshAnalytics]);
 
   const toggleFilters = useCallback(() => {
     setShowFilters(prev => !prev);
@@ -455,14 +330,10 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         <PaymentCard 
           payment={payment} 
           onNext={handleNextPayment}
-          onRepay={handleRepayPayment}
         />
       </View>
     );
-  }, [handleNextPayment, handleRepayPayment]);
-
-  // Use overdue count from analytics
-  const overdueCount = metrics.overdue;
+  }, [handleNextPayment]);
 
   const handleBackPress = () => {
     if (navigation) {
@@ -470,48 +341,75 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     }
   };
 
+  /* ---------- Export Payments to CSV ---------- */
+  const handleExport = useCallback(async () => {
+    try {
+      // Create CSV header
+      const header = 'Transaction ID,Customer Name,Amount,Currency,Status,Payment Method,Invoice,Payment Date\n';
+      
+      // Create CSV rows from filtered payments
+      const rows = filteredPayments.map(payment => {
+        const transactionId = payment.transaction_id || payment.id || 'N/A';
+        const customerName = (payment.customerName || 'Unknown').replace(/,/g, ' '); // Remove commas
+        const amount = parseFloat(payment.amount || 0).toFixed(2);
+        const currency = payment.currency || 'USD';
+        const status = payment.status || 'Pending';
+        const method = (payment.payment_method || 'N/A').replace(/,/g, ' ');
+        const invoice = (payment.invoice_number || 'N/A').replace(/,/g, ' ');
+        const date = payment.payment_date || payment.created || 'N/A';
+        
+        return `${transactionId},${customerName},${amount},${currency},${status},${method},${invoice},${date}`;
+      }).join('\n');
+      
+      // Combine header and rows
+      const csvContent = header + rows;
+      
+      // Add summary at the end
+      const summary = `\n\nSummary\nTotal Payments,${metrics.total}\nTotal Value,${metrics.totalValue}\nSuccessful,${metrics.successful}\nFailed/Voided,${metrics.failed}`;
+      const fullContent = csvContent + summary;
+      
+      // Share the CSV content
+      await Share.share({
+        message: fullContent,
+        title: 'Payment Export',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Export Failed', 'Unable to export payments. Please try again.');
+    }
+  }, [filteredPayments, metrics]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 160, paddingTop: 10 }}
         showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Header with Back Button */}
         <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={handleBackPress}
-            >
-              <Text style={styles.backButtonText}>‹ Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>Payments</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBackPress}
+          >
+            <Text style={styles.backButtonText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Payments</Text>
           <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.exportButton} 
+              onPress={handleExport}
+            >
+              <Text style={styles.exportButtonText}>📤</Text>
+            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.filterButton} 
               onPress={toggleFilters}
             >
-              <Text style={styles.filterButtonText}>Filters</Text>
+              <Text style={styles.filterButtonText}>🔍</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Overdue Warning Banner */}
-        {overdueCount > 0 && (
-          <View style={styles.overdueBanner}>
-            <Text style={styles.overdueBannerText}>
-              {overdueCount} overdue payments require attention
-            </Text>
-          </View>
-        )}
 
         {/* Loading State */}
         {loading && (
@@ -521,8 +419,18 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           </View>
         )}
 
+        {/* Error State */}
+        {error && !loading && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Error: {error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchPayments}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Payment Management KPIs - Match Screenshot */}
-        {!loading && (
+        {!loading && !error && (
           <>
             <Text style={styles.sectionTitle}>Payment Management</Text>
             <View style={styles.kpis}>
@@ -533,24 +441,22 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             </View>
 
             {/* Currency Breakdown */}
-            <Text style={styles.currencyBreakdownTitle}>Currency Breakdown</Text>
+            <Text style={styles.currencyBreakdownTitle}>Currency Breakdown:</Text>
             <View style={styles.currencyBreakdown}>
-              <View style={styles.currencyCard}>
-                <Text style={styles.currencyLabel}>INR</Text>
-                <View style={styles.currencyAmounts}>
-                  <Text style={styles.currencyAmount}>₹12,500.00</Text>
-                  <Text style={styles.currencySubtext}>Pending: ₹1,200.00</Text>
-                  <Text style={styles.currencySubtext}>Failed: ₹300.00</Text>
-                </View>
-              </View>
-              <View style={styles.currencyCard}>
-                <Text style={styles.currencyLabel}>USD</Text>
-                <View style={styles.currencyAmounts}>
-                  <Text style={styles.currencyAmount}>$429.00</Text>
-                  <Text style={styles.currencySubtext}>Pending: $50.00</Text>
-                  <Text style={styles.currencySubtext}>Failed: $9.00</Text>
-                </View>
-              </View>
+              {Object.entries(metrics.currencyBreakdown).map(([currency, data]) => {
+                const symbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '';
+                return (
+                  <View key={currency} style={styles.currencyCard}>
+                    <Text style={styles.currencyLabel}>{currency}</Text>
+                    <Text style={styles.currencySubheader}>{data.count} payment{data.count !== 1 ? 's' : ''}</Text>
+                    <View style={styles.currencyAmounts}>
+                      <Text style={styles.currencyAmount}>{symbol}{data.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                      <Text style={styles.currencySubtext}>Success: {symbol}{data.successful.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                      <Text style={styles.currencySubtext}>Failed: {symbol}{data.failed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
@@ -559,7 +465,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {showFilters && (
           <View style={styles.filtersPanel}>
             <TextInput
-              placeholder="Search by ID, customer, invoice, description"
+              placeholder="Search by ID, customer, invoice"
               placeholderTextColor="#9aa6bf"
               value={localFilters.searchText}
               onChangeText={(v) => setLocalFilters((f) => ({ ...f, searchText: v }))}
@@ -606,7 +512,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               onValueChange={(v) => setLocalFilters((f) => ({ ...f, status: v }))}
               items={[
                 { label: "All Status", value: "" },
-                { label: "Completed", value: "Completed" },
+                { label: "Success", value: "Success" },
                 { label: "Pending", value: "Pending" },
                 { label: "Failed", value: "Failed" },
                 { label: "Voided", value: "Voided" },
@@ -620,25 +526,13 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               onValueChange={(v) => setLocalFilters((f) => ({ ...f, method: v }))}
               items={[
                 { label: "All Methods", value: "" },
+                { label: "Online", value: "Online" },
+                { label: "Offline", value: "Offline" },
                 { label: "Credit Card", value: "Credit Card" },
                 { label: "Bank Transfer", value: "Bank Transfer" },
-                { label: "PayPal", value: "PayPal" },
               ]}
               placeholder="All Methods"
             />
-
-            {/* Overdue filter */}
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setLocalFilters(f => ({ ...f, isOverdue: !f.isOverdue }))}
-              >
-                <View style={[styles.checkboxBox, localFilters.isOverdue && styles.checkboxBoxChecked]}>
-                  {localFilters.isOverdue && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.checkboxLabel}>Show Overdue Only</Text>
-              </TouchableOpacity>
-            </View>
 
             <TouchableOpacity style={styles.btnGhost} onPress={clearFilters}>
               <Text style={styles.btnGhostText}>Clear All</Text>
@@ -647,15 +541,21 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         )}
 
         {/* Payment Cards */}
-        <FlatList
-          data={filteredPayments}
-          renderItem={renderPaymentCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          scrollEnabled={false}
-        />
+        {!loading && !error && (
+          <FlatList
+            data={filteredPayments}
+            renderItem={renderPaymentCard}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No payments found</Text>
+              </View>
+            }
+          />
+        )}
       </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -672,104 +572,171 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     marginTop: 6,
-    marginBottom: 8,
+    marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    gap: 8,
   },
   backButton: {
     backgroundColor: colors.panel,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    marginRight: 12,
-    minHeight: 44,
+    minWidth: 40,
+    minHeight: 40,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   backButtonText: {
     color: colors.text,
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 24,
+    lineHeight: 24,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Platform.OS === 'web' ? 8 : 4,
-  },
-  exportButton: {
-    backgroundColor: colors.panel,
-    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
-    paddingVertical: Platform.OS === 'web' ? 8 : 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 36,
-    justifyContent: 'center',
-    marginRight: 6,
-  },
-  exportButtonText: {
-    color: colors.text,
-    fontWeight: '600',
-    fontSize: Platform.OS === 'web' ? 12 : 11,
-  },
-  recordButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
-    paddingVertical: Platform.OS === 'web' ? 8 : 6,
-    borderRadius: 6,
-    minHeight: 36,
-    justifyContent: 'center',
-    marginRight: 6,
-  },
-  recordButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: Platform.OS === 'web' ? 12 : 11,
+    gap: 8,
   },
   title: { 
+    flex: 1,
     color: colors.text, 
     fontWeight: "700", 
     fontSize: Platform.OS === 'web' ? 18 : 16,
+    marginLeft: 8,
+  },
+  exportButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exportButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    lineHeight: 18,
   },
   filterButton: {
     backgroundColor: colors.panel,
-    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
-    paddingVertical: Platform.OS === 'web' ? 8 : 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 44,
+    minWidth: 40,
+    minHeight: 40,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   filterButtonText: {
     color: colors.text,
-    fontWeight: '600',
-    fontSize: Platform.OS === 'web' ? 14 : 12,
+    fontSize: 18,
+    lineHeight: 18,
   },
 
-  // Overdue Banner
-  overdueBanner: {
-    backgroundColor: 'rgba(234, 67, 53, 0.15)',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(234, 67, 53, 0.3)',
+  // Loading & Error
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  overdueBannerText: {
-    color: '#EA4335',
-    fontWeight: '600',
-    fontSize: 14,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.text,
     textAlign: 'center',
   },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#EA4335',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.subtext,
+    fontSize: 14,
+  },
 
+  // KPIs
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  currencyBreakdownTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  currencyBreakdown: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: Platform.OS === 'web' ? 12 : 8,
+    flexWrap: Platform.OS === 'web' ? 'nowrap' : 'wrap',
+  },
+  currencyCard: {
+    flex: 1,
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: Platform.OS === 'web' ? 'auto' : '45%',
+  },
+  currencyLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  currencySubheader: {
+    fontSize: 12,
+    color: colors.subtext,
+    marginBottom: 8,
+  },
+  currencyAmounts: {
+    gap: 4,
+  },
+  currencyAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  currencySubtext: {
+    fontSize: 12,
+    color: colors.subtext,
+  },
   kpis: {
     marginTop: 6,
     marginBottom: 12,
@@ -811,38 +778,6 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
-  },
-  
-  // Checkbox for filters
-  checkboxContainer: {
-    marginBottom: 12,
-  },
-  checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkboxBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxBoxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    color: colors.text,
-    fontSize: 14,
   },
   
   // Payment Card Styles
@@ -898,7 +833,6 @@ const styles = StyleSheet.create({
   },
   paymentInfo: {
     gap: 8,
-    marginBottom: 12,
   },
   paymentRow: {
     flexDirection: "row",
@@ -918,61 +852,6 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: "right",
   },
-  paymentFooter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
-    alignItems: "center",
-  },
-  paymentDate: {
-    color: colors.text,
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  paymentMethod: {
-    color: colors.subtext,
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  paymentCustomer: {
-    color: colors.subtext,
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  paymentInvoice: {
-    color: colors.subtext,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  paymentActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  repayButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    minWidth: 140,
-  },
-  repayButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  nextButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
 
   // Status Badge
   pill: {
@@ -988,29 +867,17 @@ const styles = StyleSheet.create({
   },
 
   // Input Styles
-  inputLabel: {
-    color: colors.text,
-    marginBottom: 6,
-    fontWeight: "600",
-    fontSize: Platform.OS === 'web' ? 13 : 12,
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.panel,
-    overflow: 'hidden',
-  },
   input: {
     fontSize: 15,
     color: colors.text,
     paddingHorizontal: 12,
     paddingVertical: 8,
     width: '100%',
-  },
-  inputMultiline: {
-    height: 80,
-    textAlignVertical: 'top',
+    backgroundColor: colors.bg,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 8,
   },
 
   // Button Styles
@@ -1027,39 +894,6 @@ const styles = StyleSheet.create({
   btnGhostText: {
     color: colors.primary,
     fontWeight: "700",
-  },
-  btnPrimary: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  btnPrimaryText: {
-    fontWeight: "700",
-    color: "#fff",
-  },
-
-  // Detail Row
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  detailLabel: {
-    color: colors.subtext,
-    fontSize: 14,
-    fontWeight: "600",
-    flex: 1,
-  },
-  detailValue: {
-    color: colors.text,
-    fontSize: 14,
-    flex: 2,
-    textAlign: "right",
   },
 
   // Dark Picker Styles
@@ -1149,70 +983,5 @@ const styles = StyleSheet.create({
   pickerOptionText: {
     color: colors.text,
     fontSize: 16,
-  },
-
-  // Section Title
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  currencyBreakdownTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-    marginTop: 16,
-    paddingHorizontal: 4,
-  },
-  currencyBreakdown: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: Platform.OS === 'web' ? 12 : 8,
-    flexWrap: Platform.OS === 'web' ? 'nowrap' : 'wrap',
-  },
-  currencyCard: {
-    flex: 1,
-    backgroundColor: colors.panel,
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minWidth: Platform.OS === 'web' ? 'auto' : '45%',
-  },
-  currencyLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  currencyAmounts: {
-    gap: 4,
-  },
-  currencyAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  currencySubtext: {
-    fontSize: 12,
-    color: colors.subtext,
-  },
-
-  // Loading Container
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: colors.text,
-    textAlign: 'center',
   },
 });

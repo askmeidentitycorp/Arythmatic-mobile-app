@@ -215,8 +215,30 @@ const AppContent = () => {
                         {isTestMode ? 'Test Mode' : isMSAL ? 'MSAL Auth' : 'Authenticated'}
                       </Text>
                     </View>
+                    <TouchableOpacity 
+                      style={styles.profileMenuButton} 
+                      onPress={() => {
+                        setShowProfileDropdown(false);
+                        // TODO: Navigate to Profile screen
+                        console.log('Navigate to Profile');
+                      }}
+                    >
+                      <Text style={styles.profileMenuButtonIcon}>👤</Text>
+                      <Text style={styles.profileMenuButtonText}>Profile</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.profileMenuButton} 
+                      onPress={() => {
+                        setShowProfileDropdown(false);
+                        // TODO: Navigate to Active Sessions screen
+                        console.log('Navigate to Active Sessions');
+                      }}
+                    >
+                      <Text style={styles.profileMenuButtonIcon}>💻</Text>
+                      <Text style={styles.profileMenuButtonText}>Active Sessions</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.logoutButtonModal} onPress={handleLogout}>
-                      <Text style={styles.logoutButtonTextModal}>🚪 Logout</Text>
+                      <Text style={styles.logoutButtonTextModal}>🚺 Logout</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -342,8 +364,28 @@ const AppContent = () => {
                       {isTestMode ? 'Test Mode' : isMSAL ? 'MSAL Auth' : 'Authenticated'}
                     </Text>
                   </View>
+                  <TouchableOpacity 
+                    style={styles.profileMenuButton} 
+                    onPress={() => {
+                      setShowProfileDropdown(false);
+                      console.log('Navigate to Profile');
+                    }}
+                  >
+                    <Text style={styles.profileMenuButtonIcon}>👤</Text>
+                    <Text style={styles.profileMenuButtonText}>Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.profileMenuButton} 
+                    onPress={() => {
+                      setShowProfileDropdown(false);
+                      console.log('Navigate to Active Sessions');
+                    }}
+                  >
+                    <Text style={styles.profileMenuButtonIcon}>💻</Text>
+                    <Text style={styles.profileMenuButtonText}>Active Sessions</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.logoutButtonModal} onPress={handleLogout}>
-                    <Text style={styles.logoutButtonTextModal}>🚪 Logout</Text>
+                    <Text style={styles.logoutButtonTextModal}>🚺 Logout</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -480,6 +522,22 @@ const styles = StyleSheet.create({
   userRoleModal: {
     fontSize: 12,
     color: colors.subtext,
+  },
+  profileMenuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  profileMenuButtonIcon: {
+    fontSize: 18,
+    marginRight: 12,
+  },
+  profileMenuButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
   },
   logoutButtonModal: {
     padding: 16,

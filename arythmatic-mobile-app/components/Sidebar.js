@@ -90,16 +90,6 @@ export default function Sidebar({
           businessScreen={businessScreen}
           onSelect={(key) => handleNavigation("Business", key)}
         />
-
-        {/* ✅ WhatsApp CRM */}
-        <SidebarItem
-          icon="●"
-          label="WhatsApp CRM"
-          active={currentScreen === "WhatsAppCRM"}
-          onPress={() => handleNavigation("WhatsAppCRM")}
-          showLabel={menuOpen}
-          labelOpacity={labelOpacity}
-        />
       </ScrollView>
     </Animated.View>
   );

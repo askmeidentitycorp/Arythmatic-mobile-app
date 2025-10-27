@@ -97,14 +97,18 @@ const CustomerCard = ({ customer, onActionPress }) => {
       {expanded && (
         <View style={styles.expandedContent}>
           <View style={styles.tabRow}>
-            {["Basic Information", "Contact Details", "Notes"].map((tab) => (
+            {[
+              { label: "Basic", value: "Basic Information" },
+              { label: "Contact", value: "Contact Details" },
+              { label: "Notes", value: "Notes" }
+            ].map((tab) => (
               <TouchableOpacity
-                key={tab}
-                onPress={() => setActiveTab(tab)}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
+                key={tab.value}
+                onPress={() => setActiveTab(tab.value)}
+                style={[styles.tab, activeTab === tab.value && styles.activeTab]}
               >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab}
+                <Text style={[styles.tabText, activeTab === tab.value && styles.activeTabText]}>
+                  {tab.label}
                 </Text>
               </TouchableOpacity>
             ))}
