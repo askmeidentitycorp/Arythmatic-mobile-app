@@ -15,7 +15,7 @@ import CustomerScreen from "./screens/CustomerScreen";
 import InteractionsScreen from "./screens/InteractionScreen";
 import InvoicesScreen from "./screens/InvoicesScreen";
 import PaymentsScreen from "./screens/PaymentScreen";
-import PaymentDetailsScreen from "./screens/PaymentdetailsScreen";
+import PaymentDetailsScreen from "./screens/PaymentDetailsScreen";
 import ProductsScreen from "./screens/ProductScreen";
 import SalesRepsScreen from "./screens/SalesRepsScreen";
 
