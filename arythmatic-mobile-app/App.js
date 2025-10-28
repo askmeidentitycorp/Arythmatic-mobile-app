@@ -15,7 +15,7 @@ import CustomerScreen from "./screens/CustomerScreen";
 import InteractionsScreen from "./screens/InteractionScreen";
 import InvoicesScreen from "./screens/InvoicesScreen";
 import PaymentsScreen from "./screens/PaymentScreen";
-import PaymentDetailsScreen from "./screens/PaymentDetailsScreen";
+import PaymentDetailsScreen from "./screens/PaymentdetailsScreen";
 import ProductsScreen from "./screens/ProductScreen";
 import SalesRepsScreen from "./screens/SalesRepsScreen";
 
@@ -139,8 +139,7 @@ const AppContent = () => {
   // If we're showing payment details, render that screen
   if (showPaymentDetails) {
     return (
-      <SafeAreaProvider>
-        <View style={{ flex: 1, flexDirection: "row" }}>
+      <View style={{ flex: 1, flexDirection: "row" }}>
           {/* Sidebar */}
           <Sidebar
             menuOpen={menuOpen}
@@ -246,12 +245,10 @@ const AppContent = () => {
             </Modal>
           )}
         </View>
-      </SafeAreaProvider>
     );
   }
 
   return (
-    <SafeAreaProvider>
       <View style={{ flex: 1, flexDirection: "row" }}>
         {/* Sidebar */}
         <Sidebar

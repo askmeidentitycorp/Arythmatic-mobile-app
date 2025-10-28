@@ -228,13 +228,24 @@ export default function CustomerScreen({ navigation }) {
   // Handle form submission (Create/Update)
   const handleFormSubmit = async (formData) => {
     try {
+      // Map to API expected keys (snake_case)
+      const payload = {
+        display_name: formData.displayName,
+        email: formData.email,
+        phone: formData.phone,
+        type: formData.type,
+        country_code: formData.countryCode,
+        address: formData.address,
+        notes: formData.notes,
+      };
+
       if (modalMode === 'create') {
-        console.log('🆕 Creating customer:', formData);
-        await createCustomer(formData, true); // useNested = true
+        console.log('🆕 Creating customer:', payload);
+        await createCustomer(payload, true); // useNested = true
         Alert.alert('Success', 'Customer created successfully!');
       } else {
-        console.log('📝 Updating customer:', selectedCustomer.id, formData);
-        await updateCustomer(selectedCustomer.id, formData, true, false); // useNested = true, partial = false
+        console.log('📝 Updating customer:', selectedCustomer.id, payload);
+        await updateCustomer(selectedCustomer.id, payload, true, false); // useNested = true, partial = false
         Alert.alert('Success', 'Customer updated successfully!');
       }
       refresh();
