@@ -25,6 +25,7 @@ import InteractionHeader from '../components/Interaction/InteractionHeader';
 import InteractionKPIs from '../components/Interaction/InteractionKPIs';
 import InteractionSearchAndFilters from '../components/Interaction/InteractionSearchAndFilters';
 import { useInteractionMutations, useInteractions } from '../hooks/useInteractions';
+import { customerService } from '../services/customerService';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -48,6 +49,8 @@ const LabeledInput = ({ label, value, onChangeText, placeholder, multiline, ...r
 };
 
 export default function InteractionScreen({ navigation, onBack, initialRepId, initialRepName }) {
+  const [nameCache, setNameCache] = useState({});
+  const fetchingIdsRef = React.useRef(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -304,6 +307,8 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
           onClearFilters={handleClearFilters}
         />
 
+        {/* Resolve customer names by id where missing */}
+        {interactions.forEach?.(() => {})}
         {/* Interaction Cards */}
         {interactions.length === 0 && !loading ? (
           <View style={styles.emptyContainer}>
@@ -313,11 +318,29 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         ) : (
           interactions.map((item) => {
             const expanded = expandedId === item.id;
+
+            // Resolve customer name by id
+            const cid = item?.customer_details?.id 
+              || item?.customer_id 
+              || (typeof item?.customer === 'string' ? item.customer : null);
+            if (cid && !nameCache[cid] && !fetchingIdsRef.current.has(cid)) {
+              fetchingIdsRef.current.add(cid);
+              customerService.getById(cid)
+                .then((resp) => {
+                  const c = resp?.data || resp;
+                  const dn = c?.displayName || c?.name || c?.full_name || c?.email;
+                  if (dn) setNameCache(prev => ({ ...prev, [cid]: dn }));
+                })
+                .finally(() => fetchingIdsRef.current.delete(cid));
+            }
+            const interactionForRender = (cid && nameCache[cid])
+              ? { ...item, customer_details: { ...(item.customer_details || {}), displayName: nameCache[cid] } }
+              : item;
             
             return (
               <View key={item.id}>
                 <InteractionCard
-                  interaction={item}
+                  interaction={interactionForRender}
                   expanded={expanded}
                   onToggle={() => {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

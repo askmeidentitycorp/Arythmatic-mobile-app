@@ -1,12 +1,7 @@
 // components/SidebarItem.js
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, View, Animated } from "react-native";
-
-const colors = {
-  primary: "#6B5CE7",
-  text: "#E7E9EF",
-  subtext: "#A7AEC0",
-};
+import { colors } from "../constants/config";
 
 export default function SidebarItem({
   icon,

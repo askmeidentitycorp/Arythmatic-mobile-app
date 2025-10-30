@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { colors } from '../constants/config';
+import DarkPicker from './Customer/DarkPicker';
 
 /**
  * Universal CRUD Modal Component
@@ -172,12 +173,12 @@ const CrudModal = ({
       
       case 'select':
         return (
-          <View style={styles.selectContainer}>
-            <Text style={styles.selectValue}>
-              {field.options?.find(opt => opt.value === value)?.label || 'Select...'}
-            </Text>
-            <Text style={styles.selectArrow}>▼</Text>
-          </View>
+          <DarkPicker
+            selectedValue={value}
+            onValueChange={(v) => handleInputChange(field.key, v)}
+            items={field.options || []}
+            placeholder={field.placeholder || field.label}
+          />
         );
       
       default:

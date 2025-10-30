@@ -1,31 +1,30 @@
 // services/apiClient.js
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/authConfig';
 
 const BASE_URL = "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
-const HARDCODED_TOKEN = "602a23070f1c92b8812773e645b7bf2f4a1cc4fc";
 
 class ApiClient {
   constructor() {
     this.baseURL = BASE_URL;
-    this.token = HARDCODED_TOKEN;
-    this.setToken(HARDCODED_TOKEN);
+    this.token = null;
   }
 
   async getToken() {
     if (this.token) {
       return this.token;
     }
-    this.token = await AsyncStorage.getItem('auth_token') || HARDCODED_TOKEN;
+    this.token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     return this.token;
   }
 
   async setToken(token) {
     this.token = token;
     if (token) {
-      await AsyncStorage.setItem('auth_token', token);
+      await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     } else {
-      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     }
   }
 
@@ -46,12 +45,15 @@ class ApiClient {
     }
 
     try {
-      console.log(`🚀 API Request: ${config.method || 'GET'} ${url}`);
-      console.log(`🔑 Using Token: ${token ? 'Yes' : 'No'}`);
-      console.log(`📋 Headers:`, config.headers);
+      if (__DEV__) {
+        console.log(`🚀 API Request: ${config.method || 'GET'} ${url}`);
+        console.log(`🔑 Using Token: ${token ? 'Yes' : 'No'}`);
+      }
 
       const response = await fetch(url, config);
-      console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+      if (__DEV__) {
+        console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+      }
 
       if (response.status === 401) {
         console.error('❌ 401 Unauthorized - Token may be invalid');
@@ -63,13 +65,13 @@ class ApiClient {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorData = await response.json();
-          console.log('❌ Error Response Data:', errorData);
+          if (__DEV__) console.log('❌ Error Response Data:', errorData);
           if (errorData.detail) errorMessage = errorData.detail;
           else if (errorData.message) errorMessage = errorData.message;
           else if (errorData.error) errorMessage = errorData.error;
           else if (errorData.non_field_errors) errorMessage = errorData.non_field_errors[0];
         } catch (e) {
-          console.log('❌ Could not parse error response as JSON');
+          if (__DEV__) console.log('❌ Could not parse error response as JSON');
         }
         throw new Error(errorMessage);
       }
@@ -79,12 +81,12 @@ class ApiClient {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
-        console.log('✅ API Response Data:', JSON.stringify(data, null, 2));
+        if (__DEV__) console.log('✅ API Response Data:', JSON.stringify(data, null, 2));
         return data;
       }
 
       const textData = await response.text();
-      console.log('📄 API Response Text:', textData);
+      if (__DEV__) console.log('📄 API Response Text:', textData);
       return textData;
     } catch (error) {
       console.error('❌ API Error:', error.message);
@@ -113,15 +115,17 @@ class ApiClient {
         
       url += `?${queryString}`;
       
-      console.log(`🔍 FIXED GET with clean params:`, cleanParams);
-      console.log(`🔗 FIXED Final URL: ${this.baseURL}${url}`);
+      if (__DEV__) {
+        console.log(`🔍 FIXED GET with clean params:`, cleanParams);
+        console.log(`🔗 FIXED Final URL: ${this.baseURL}${url}`);
+      }
     }
 
     return this.request(url, { method: 'GET' });
   }
 
   post(endpoint, data) {
-    console.log('📤 POST Data:', JSON.stringify(data, null, 2));
+    if (__DEV__) console.log('📤 POST Data:', JSON.stringify(data, null, 2));
     return this.request(endpoint, {
       method: 'POST',
       body: data,
@@ -129,7 +133,7 @@ class ApiClient {
   }
 
   put(endpoint, data) {
-    console.log('📤 PUT Data:', JSON.stringify(data, null, 2));
+    if (__DEV__) console.log('📤 PUT Data:', JSON.stringify(data, null, 2));
     return this.request(endpoint, {
       method: 'PUT',
       body: data,
@@ -137,7 +141,7 @@ class ApiClient {
   }
 
   patch(endpoint, data) {
-    console.log('📤 PATCH Data:', JSON.stringify(data, null, 2));
+    if (__DEV__) console.log('📤 PATCH Data:', JSON.stringify(data, null, 2));
     return this.request(endpoint, {
       method: 'PATCH',
       body: data,
@@ -145,7 +149,7 @@ class ApiClient {
   }
 
   delete(endpoint) {
-    console.log('🗑️ DELETE request to:', endpoint);
+    if (__DEV__) console.log('🗑️ DELETE request to:', endpoint);
     return this.request(endpoint, { method: 'DELETE' });
   }
 

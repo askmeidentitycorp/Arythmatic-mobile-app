@@ -20,6 +20,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 import { paymentService } from '../services/paymentService';
+import { customerService } from '../services/customerService';
+import DarkPicker from '../components/Customer/DarkPicker';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -105,76 +107,12 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
   );
 });
 
-/* ---------- Custom Dark Themed Picker Component ---------- */
-const DarkPicker = React.memo(({ selectedValue, onValueChange, items, placeholder, style }) => {
-  const [showPicker, setShowPicker] = useState(false);
-  const displayValue = items.find(item => item.value === selectedValue)?.label || placeholder;
-
-  return (
-    <View style={[styles.pickerContainer, style]}>
-      <TouchableOpacity
-        style={styles.pickerTouchable}
-        onPress={() => setShowPicker(true)}
-      >
-        <Text style={[styles.pickerText, !selectedValue && { color: colors.subtext }]}>
-          {displayValue}
-        </Text>
-        <Text style={styles.pickerIcon}>▼</Text>
-      </TouchableOpacity>
-      
-      <Modal
-        visible={showPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPicker(false)}
-        statusBarTranslucent
-      >
-        <Pressable style={styles.pickerModalOverlay} onPress={() => setShowPicker(false)}>
-          <View style={styles.pickerModalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.pickerModalHeader}>
-              <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Text style={styles.pickerModalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={styles.pickerModalTitle}>Select Option</Text>
-              <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Text style={styles.pickerModalDone}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.pickerOptionsContainer}>
-              <ScrollView>
-                {items.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.pickerOption,
-                      selectedValue === item.value && styles.pickerOptionSelected
-                    ]}
-                    onPress={() => {
-                      onValueChange(item.value);
-                      setShowPicker(false);
-                    }}
-                  >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      selectedValue === item.value && { color: colors.primary }
-                    ]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
-  );
-});
 
 /* ---------- Main Component ---------- */
 export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   const [payments, setPayments] = useState([]);
+  const [nameCache, setNameCache] = useState({});
+  const fetchingIdsRef = React.useRef(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -212,14 +150,16 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         // 2. Get customer info from the invoice
         // 3. Or fetch from /users endpoint using payment.created_by
         
+        const customerId = payment.customer?.id || payment.customer_id || payment.created_by || null;
         const customerName = payment.customer_name || 
                            payment.customer?.name || 
                            payment.customer?.display_name || 
-                           'Customer'; // Generic placeholder since API doesn't include this
+                           (customerId ? '' : 'Customer'); // leave empty to resolve asynchronously when id exists
         
         return {
           ...payment,
           transaction_id: payment.transaction_id || payment.id,
+          customerId,
           customerName,
           // Normalize status to Title Case
           status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
@@ -240,6 +180,29 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       console.log('🔵 ========== END PAYMENT FETCH ==========\n');
       
       setPayments(transformedPayments);
+
+      // Resolve customer names for items missing names
+      const idsToFetch = Array.from(new Set(
+        transformedPayments
+          .filter(p => (!p.customerName || p.customerName === '') && p.customerId)
+          .map(p => p.customerId)
+      ));
+
+      idsToFetch.forEach(async (cid) => {
+        if (!cid || nameCache[cid] || fetchingIdsRef.current.has(cid)) return;
+        fetchingIdsRef.current.add(cid);
+        try {
+          const data = await customerService.getById(cid);
+          const cust = data?.data || data;
+          const displayName = cust?.displayName || cust?.name || cust?.full_name || cust?.email || 'Customer';
+          setNameCache(prev => ({ ...prev, [cid]: displayName }));
+          setPayments(prev => prev.map(p => (p.customerId === cid && (!p.customerName || p.customerName === '')) ? { ...p, customerName: displayName } : p));
+        } catch (e) {
+          // leave placeholder
+        } finally {
+          fetchingIdsRef.current.delete(cid);
+        }
+      });
     } catch (err) {
       console.error('❌ PAYMENT FETCH ERROR:', err);
       console.error('❌ Error Message:', err.message);
@@ -522,14 +485,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         contentContainerStyle={{ paddingBottom: 160, paddingTop: 10 }}
         showsVerticalScrollIndicator={true}
       >
-        {/* Header with Back Button */}
+        {/* Header */}
         <View style={styles.headerRow}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={handleBackPress}
-          >
-            <Text style={styles.backButtonText}>‹</Text>
-          </TouchableOpacity>
           <Text style={styles.title}>Payments</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity 
@@ -576,24 +533,6 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               <KPI label="Failed/Voided" value={metrics.failed} color="#EA4335" />
             </View>
 
-            {/* Currency Breakdown */}
-            <Text style={styles.currencyBreakdownTitle}>Currency Breakdown:</Text>
-            <View style={styles.currencyBreakdown}>
-              {Object.entries(metrics.currencyBreakdown).map(([currency, data]) => {
-                const symbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '';
-                return (
-                  <View key={currency} style={styles.currencyCard}>
-                    <Text style={styles.currencyLabel}>{currency}</Text>
-                    <Text style={styles.currencySubheader}>{data.count} payment{data.count !== 1 ? 's' : ''}</Text>
-                    <View style={styles.currencyAmounts}>
-                      <Text style={styles.currencyAmount}>{symbol}{data.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                      <Text style={styles.currencySubtext}>Success: {symbol}{data.successful.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                      <Text style={styles.currencySubtext}>Failed: {symbol}{data.failed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
           </>
         )}
 

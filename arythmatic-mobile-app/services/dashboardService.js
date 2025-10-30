@@ -90,8 +90,11 @@ export const dashboardService = {
       };
     } catch (error) {
       console.error('❌ Critical error in dashboard data fetch:', error);
-      // Return complete fallback data if everything fails
-      return this.getCompleteFallbackData();
+      // Return complete fallback data in development; otherwise rethrow
+      if (__DEV__) {
+        return this.getCompleteFallbackData();
+      }
+      throw error;
     }
   },
 
