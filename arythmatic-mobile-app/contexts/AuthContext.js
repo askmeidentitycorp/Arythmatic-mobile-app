@@ -1,6 +1,7 @@
 // contexts/AuthContext.js
 import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
 import authController from '../services/authController';
+import apiClient from '../services/apiClient';
 import { AUTH_PROVIDER } from '../constants/authConfig';
 
 /**
@@ -173,6 +174,9 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await authController.getCurrentUser();
       
       if (currentUser) {
+        // Set token in apiClient
+        await apiClient.setToken(currentUser.accessToken);
+        
         dispatch({
           type: AuthActionTypes.INITIALIZE_SUCCESS,
           payload: {
@@ -181,6 +185,9 @@ export const AuthProvider = ({ children }) => {
           },
         });
       } else {
+        // Clear token in apiClient
+        await apiClient.setToken(null);
+        
         dispatch({
           type: AuthActionTypes.INITIALIZE_SUCCESS,
           payload: {
@@ -204,6 +211,9 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AuthActionTypes.SIGN_IN_START });
 
       const result = await authController.signIn(credentials);
+      
+      // Set token in apiClient immediately after successful sign in
+      await apiClient.setToken(result.tokens.accessToken);
       
       dispatch({
         type: AuthActionTypes.SIGN_IN_SUCCESS,
@@ -230,6 +240,9 @@ export const AuthProvider = ({ children }) => {
 
       await authController.signOut();
       
+      // Clear token in apiClient
+      await apiClient.setToken(null);
+      
       dispatch({ type: AuthActionTypes.SIGN_OUT_SUCCESS });
     } catch (error) {
       dispatch({
@@ -244,6 +257,9 @@ export const AuthProvider = ({ children }) => {
   const refreshToken = useCallback(async () => {
     try {
       const result = await authController.refreshToken();
+      
+      // Update token in apiClient
+      await apiClient.setToken(result.tokens.accessToken);
       
       dispatch({
         type: AuthActionTypes.REFRESH_TOKEN_SUCCESS,

@@ -390,7 +390,6 @@ const AppContent = () => {
           </Modal>
         )}
       </View>
-    </SafeAreaProvider>
   );
 };
 

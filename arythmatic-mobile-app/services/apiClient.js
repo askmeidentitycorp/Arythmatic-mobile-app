@@ -57,7 +57,14 @@ class ApiClient {
 
       if (response.status === 401) {
         console.error('❌ 401 Unauthorized - Token may be invalid');
-        await this.setToken(null);
+        // In development with test auth, don't clear tokens - let fallback data work
+        if (__DEV__) {
+          console.warn('⚠️ Dev Mode: Keeping token, app will use fallback data');
+        } else if (token) {
+          // Only clear token in production
+          console.warn('⚠️ Clearing invalid token from storage');
+          await this.setToken(null);
+        }
         throw new Error('Authentication required - Token may be expired or invalid');
       }
 

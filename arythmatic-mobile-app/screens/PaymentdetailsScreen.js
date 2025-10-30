@@ -80,12 +80,28 @@ export default function PaymentDetailsScreen({ route, navigation }) {
     setShowRefundModal(true);
   };
 
-  const handleConfirmRefund = (amount, reason, date) => {
-    Alert.alert(
-      "Refund Processed",
-      `Refund of ${amount} for payment ${payment.id} has been processed.`,
-      [{ text: "OK", onPress: () => setShowRefundModal(false) }]
-    );
+  const handleConfirmRefund = async (amount, reason, date) => {
+    try {
+      setLoading(true);
+      await paymentService.refundPayment(payment.id);
+      Alert.alert(
+        "Refund Processed",
+        `Refund of ${amount} for payment ${payment.id} has been processed.`,
+        [{ 
+          text: "OK", 
+          onPress: () => {
+            setShowRefundModal(false);
+            // Reload payment details to get updated status
+            navigation?.goBack?.();
+          }
+        }]
+      );
+    } catch (error) {
+      console.error('Refund error:', error);
+      Alert.alert('Error', error.message || 'Failed to process refund. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRepayPayment = () => {
@@ -97,15 +113,27 @@ export default function PaymentDetailsScreen({ route, navigation }) {
   const handleConfirmPayment = async () => {
     if (!payment) return;
     try {
-      // Local-only state change for demo; replace with API call when available
-      setPayment(prev => ({ ...prev, status: "Completed", isOverdue: false }));
+      setLoading(true);
+      await paymentService.processPayment(payment.id);
+      // Update local state optimistically
+      setPayment(prev => ({ ...prev, status: "Success", isOverdue: false }));
       Alert.alert(
         "Payment Processed",
         "Payment has been successfully processed.",
-        [{ text: "OK", onPress: () => setShowConfirmationModal(false) }]
+        [{ 
+          text: "OK", 
+          onPress: () => {
+            setShowConfirmationModal(false);
+            // Go back to refresh the list
+            navigation?.goBack?.();
+          }
+        }]
       );
     } catch (error) {
-      Alert.alert("Error", "Failed to process payment");
+      console.error('Process payment error:', error);
+      Alert.alert("Error", error.message || "Failed to process payment. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 

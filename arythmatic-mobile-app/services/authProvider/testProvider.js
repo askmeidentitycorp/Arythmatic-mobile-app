@@ -2,6 +2,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TEST_CONFIG, STORAGE_KEYS } from '../../constants/authConfig';
 
+const API_BASE_URL = 'https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1';
+
+// Global access token for development (will be replaced with ROPG once available)
+// TODO: Replace this with actual ROPG authentication when available
+const GLOBAL_ACCESS_TOKEN = '602a23070f1c92b8812773e645b7bf2f4a1cc4fc';
+
 /**
  * Test Authentication Provider
  * Provides mock authentication for development and testing
@@ -77,10 +83,7 @@ export const signInTest = async (username, password) => {
   try {
     console.log('🧪 Test Auth: Attempting sign-in for:', username);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Validate credentials
+    // Validate credentials locally first
     const validCredential = TEST_CONFIG.validCredentials.find(
       cred => cred.username === username && cred.password === password
     );
@@ -95,9 +98,27 @@ export const signInTest = async (username, password) => {
       throw new Error('User profile not found');
     }
 
-    // Generate tokens
-    const accessToken = generateMockToken(user);
-    const refreshToken = generateRefreshToken(user);
+    // Use global access token (mock login, real data)
+    let accessToken, refreshToken;
+    
+    if (GLOBAL_ACCESS_TOKEN && GLOBAL_ACCESS_TOKEN !== 'YOUR_GLOBAL_ACCESS_TOKEN_HERE') {
+      // Use the global token provided by the API team
+      console.log('🔑 Using global access token for API requests');
+      accessToken = GLOBAL_ACCESS_TOKEN;
+      refreshToken = generateRefreshToken(user);
+      console.log('✅ Global token configured successfully');
+    } else {
+      // No global token configured - use mock token and warn user
+      console.warn('⚠️⚠️⚠️ GLOBAL_ACCESS_TOKEN not configured! ⚠️⚠️⚠️');
+      console.warn('📝 To use real API data:');
+      console.warn('   1. Open: services/authProvider/testProvider.js');
+      console.warn('   2. Replace: GLOBAL_ACCESS_TOKEN = \'YOUR_GLOBAL_ACCESS_TOKEN_HERE\'');
+      console.warn('   3. With your actual token from the API team');
+      console.warn('⚠️ Using mock token - app will show fallback data only');
+      accessToken = generateMockToken(user);
+      refreshToken = generateRefreshToken(user);
+    }
+
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
 
     const tokens = {

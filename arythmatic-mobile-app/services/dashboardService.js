@@ -29,7 +29,7 @@ export const dashboardService = {
         console.log('✅ Overview data fetched');
       } catch (err) {
         console.warn('⚠️ Overview API failed:', err.message);
-        overviewRes = this.getDefaultOverviewData();
+        overviewRes = dashboardService.getDefaultOverviewData();
       }
       
       try {
@@ -37,7 +37,7 @@ export const dashboardService = {
         console.log('✅ Revenue data fetched');
       } catch (err) {
         console.warn('⚠️ Revenue API failed:', err.message);
-        revenueRes = this.getDefaultRevenueData();
+        revenueRes = dashboardService.getDefaultRevenueData();
       }
       
       // Small delay to avoid overwhelming server
@@ -48,7 +48,7 @@ export const dashboardService = {
         console.log('✅ Sales performance data fetched');
       } catch (err) {
         console.warn('⚠️ Sales performance API failed:', err.message);
-        salesRes = this.getDefaultSalesData();
+        salesRes = dashboardService.getDefaultSalesData();
       }
       
       try {
@@ -56,7 +56,7 @@ export const dashboardService = {
         console.log('✅ Products data fetched');
       } catch (err) {
         console.warn('⚠️ Products API failed:', err.message);
-        productsRes = this.getDefaultProductsData();
+        productsRes = dashboardService.getDefaultProductsData();
       }
       
       // Small delay before final calls
@@ -67,7 +67,7 @@ export const dashboardService = {
         console.log('✅ Team performance data fetched');
       } catch (err) {
         console.warn('⚠️ Team performance API failed:', err.message);
-        teamRes = this.getDefaultTeamData();
+        teamRes = dashboardService.getDefaultTeamData();
       }
       
       try {
@@ -75,7 +75,7 @@ export const dashboardService = {
         console.log('✅ Realtime data fetched');
       } catch (err) {
         console.warn('⚠️ Realtime API failed:', err.message);
-        realtimeRes = this.getDefaultRealtimeData();
+        realtimeRes = dashboardService.getDefaultRealtimeData();
       }
 
       console.log('✅ Dashboard data fetched successfully (with fallbacks if needed)');
@@ -92,7 +92,7 @@ export const dashboardService = {
       console.error('❌ Critical error in dashboard data fetch:', error);
       // Return complete fallback data in development; otherwise rethrow
       if (__DEV__) {
-        return this.getCompleteFallbackData();
+        return dashboardService.getCompleteFallbackData();
       }
       throw error;
     }

@@ -334,64 +334,98 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   const handleEditPayment = useCallback(() => {
     console.log('Edit payment:', selectedPayment?.id);
     handleCloseActionSheet();
-    Alert.alert('Edit Payment', 'Edit payment functionality will be implemented here.');
+    // TODO: Navigate to edit form when implemented
+    Alert.alert('Edit Payment', 'Edit payment form will be implemented in future update.');
   }, [selectedPayment, handleCloseActionSheet]);
 
   const handleProcessPayment = useCallback(() => {
     console.log('Process payment:', selectedPayment?.id);
+    const paymentToProcess = selectedPayment;
     handleCloseActionSheet();
     Alert.alert(
       'Process Payment',
-      `Process payment of ${selectedPayment?.amountFormatted}?`,
+      `Process payment of ${paymentToProcess?.amountFormatted}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Process',
-          onPress: () => {
-            Alert.alert('Success', 'Payment processed successfully!');
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await paymentService.processPayment(paymentToProcess?.id);
+              Alert.alert('Success', 'Payment processed successfully!');
+              await fetchPayments(); // Refresh the list
+            } catch (error) {
+              console.error('Process payment error:', error);
+              Alert.alert('Error', error.message || 'Failed to process payment. Please try again.');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet]);
+  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
 
   const handleVoidPayment = useCallback(() => {
     console.log('Void payment:', selectedPayment?.id);
+    const paymentToVoid = selectedPayment;
     handleCloseActionSheet();
     Alert.alert(
       'Void Payment',
-      `Are you sure you want to void this payment of ${selectedPayment?.amountFormatted}?`,
+      `Are you sure you want to void this payment of ${paymentToVoid?.amountFormatted}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Void',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', 'Payment voided successfully!');
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await paymentService.voidPayment(paymentToVoid?.id);
+              Alert.alert('Success', 'Payment voided successfully!');
+              await fetchPayments(); // Refresh the list
+            } catch (error) {
+              console.error('Void payment error:', error);
+              Alert.alert('Error', error.message || 'Failed to void payment. Please try again.');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet]);
+  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
 
   const handleRefundPayment = useCallback(() => {
     console.log('Refund payment:', selectedPayment?.id);
+    const paymentToRefund = selectedPayment;
     handleCloseActionSheet();
     Alert.alert(
       'Refund Payment',
-      `Refund ${selectedPayment?.amountFormatted} to customer?`,
+      `Refund ${paymentToRefund?.amountFormatted} to customer?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Refund',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', 'Refund initiated successfully!');
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await paymentService.refundPayment(paymentToRefund?.id);
+              Alert.alert('Success', 'Refund initiated successfully!');
+              await fetchPayments(); // Refresh the list
+            } catch (error) {
+              console.error('Refund payment error:', error);
+              Alert.alert('Error', error.message || 'Failed to initiate refund. Please try again.');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet]);
+  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
 
   const handleAuditHistory = useCallback(() => {
     console.log('View audit history:', selectedPayment?.id);
@@ -401,6 +435,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
   const handleDeletePayment = useCallback(() => {
     console.log('Delete payment:', selectedPayment?.id);
+    const paymentToDelete = selectedPayment;
     handleCloseActionSheet();
     Alert.alert(
       'Delete Payment',
@@ -410,9 +445,18 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', 'Payment deleted successfully!');
-            fetchPayments(); // Refresh the list
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await paymentService.delete(paymentToDelete?.id);
+              Alert.alert('Success', 'Payment deleted successfully!');
+              await fetchPayments(); // Refresh the list
+            } catch (error) {
+              console.error('Delete payment error:', error);
+              Alert.alert('Error', error.message || 'Failed to delete payment. Please try again.');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
@@ -434,11 +478,11 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     );
   }, [handleNextPayment]);
 
-  const handleBackPress = () => {
-    if (navigation) {
+  const handleBackPress = useCallback(() => {
+    if (navigation && navigation.goBack) {
       navigation.goBack();
     }
-  };
+  }, [navigation]);
 
   /* ---------- Export Payments to CSV ---------- */
   const handleExport = useCallback(async () => {
