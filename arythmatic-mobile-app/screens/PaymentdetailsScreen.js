@@ -9,49 +9,65 @@ import {
   Modal,
   Alert,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "../constants/config";
+import { paymentService } from "../services/paymentService";
+import { customerService } from "../services/customerService";
 
 export default function PaymentDetailsScreen({ route, navigation }) {
-  // Get the payment ID from the route parameters
   const paymentId = route?.params?.paymentId || '';
   const [payment, setPayment] = useState(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const currencySymbol = (c) => (c === 'INR' ? '₹' : c === 'USD' ? '$' : c === 'EUR' ? '€' : c === 'GBP' ? '£' : '');
+
   useEffect(() => {
-    // If no paymentId is provided, go back
     if (!paymentId) {
       Alert.alert("Error", "No payment ID provided");
-      if (navigation && navigation.goBack) {
-        navigation.goBack();
-      }
+      navigation?.goBack?.();
       return;
     }
 
     const loadPayment = async () => {
       try {
         setLoading(true);
-        const paymentsJson = await AsyncStorage.getItem("payments");
-        if (paymentsJson) {
-          const payments = JSON.parse(paymentsJson);
-          const foundPayment = payments.find(p => p.id === paymentId);
-          if (foundPayment) {
-            setPayment(foundPayment);
-          } else {
-            Alert.alert("Error", "Payment not found");
-            if (navigation && navigation.goBack) {
-              navigation.goBack();
+        const data = await paymentService.getById(paymentId);
+        const p = data?.data || data || {};
+        const amount = parseFloat(p.amount) || 0;
+        const currency = p.currency || 'USD';
+        const normalized = {
+          id: p.id || p.transaction_id || paymentId,
+          transaction_id: p.transaction_id || p.id || paymentId,
+          amount,
+          currency,
+          amountFormatted: `${currencySymbol(currency)}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          method: p.payment_method || p.paymentMethod || 'N/A',
+          date: p.payment_date || p.created || '',
+          invoice: p.invoice_number || (p.invoice ? String(p.invoice).slice(-8) : 'N/A'),
+          customerId: p.customer?.id || p.customer_id || '',
+          customerName: p.customer?.name || p.customer_name || 'Customer',
+          status: (p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).toLowerCase() : 'Pending'),
+          isOverdue: !!p.is_overdue,
+          description: p.description || '',
+        };
+        setPayment(normalized);
+
+        // Resolve customer name by ID if missing
+        if ((!normalized.customerName || normalized.customerName === 'Customer') && normalized.customerId) {
+          try {
+            const dataCust = await customerService.getById(normalized.customerId);
+            const c = dataCust?.data || dataCust;
+            const displayName = c?.displayName || c?.name || c?.full_name || c?.email;
+            if (displayName) {
+              setPayment(prev => ({ ...prev, customerName: displayName }));
             }
-          }
+          } catch {}
         }
       } catch (error) {
         console.error("Error loading payment:", error);
-        Alert.alert("Error", "Failed to load payment details");
-        if (navigation && navigation.goBack) {
-          navigation.goBack();
-        }
+        Alert.alert("Error", error.message || "Failed to load payment details");
+        navigation?.goBack?.();
       } finally {
         setLoading(false);
       }
@@ -80,26 +96,15 @@ export default function PaymentDetailsScreen({ route, navigation }) {
 
   const handleConfirmPayment = async () => {
     if (!payment) return;
-    
     try {
-      const paymentsJson = await AsyncStorage.getItem("payments");
-      if (paymentsJson) {
-        const payments = JSON.parse(paymentsJson);
-        const updatedPayments = payments.map(p => 
-          p.id === payment.id ? { ...p, status: "Completed", isOverdue: false } : p
-        );
-        
-        await AsyncStorage.setItem("payments", JSON.stringify(updatedPayments));
-        setPayment(prev => ({ ...prev, status: "Completed", isOverdue: false }));
-        
-        Alert.alert(
-          "Payment Processed",
-          "Payment has been successfully processed.",
-          [{ text: "OK", onPress: () => setShowConfirmationModal(false) }]
-        );
-      }
+      // Local-only state change for demo; replace with API call when available
+      setPayment(prev => ({ ...prev, status: "Completed", isOverdue: false }));
+      Alert.alert(
+        "Payment Processed",
+        "Payment has been successfully processed.",
+        [{ text: "OK", onPress: () => setShowConfirmationModal(false) }]
+      );
     } catch (error) {
-      console.error("Error updating payment:", error);
       Alert.alert("Error", "Failed to process payment");
     }
   };
@@ -133,38 +138,30 @@ export default function PaymentDetailsScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        {/* Header with Back Button */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity 
-            style={styles.headerBackButton}
-            onPress={() => navigation?.goBack()}
-          >
-            <Text style={styles.headerBackButtonText}>‹</Text>
-          </TouchableOpacity>
-          <View style={styles.header}>
-            <Text style={styles.title}>Payment Details</Text>
-            <View style={[
-              styles.statusContainer,
+        {/* Title & Status */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Payment Details</Text>
+          <View style={[
+            styles.statusContainer,
+            {
+              backgroundColor: payment.isOverdue ? 'rgba(234,67,53,0.15)' : 
+                               payment.status === 'Completed' ? 'rgba(49,199,106,0.12)' : 
+                               'rgba(244,183,64,0.15)',
+              borderColor: payment.isOverdue ? '#EA4335' : 
+                           payment.status === 'Completed' ? '#31C76A' : 
+                           '#F4B740',
+            }
+          ]}>
+            <Text style={[
+              styles.statusText,
               {
-                backgroundColor: payment.isOverdue ? 'rgba(234,67,53,0.15)' : 
-                                 payment.status === 'Completed' ? 'rgba(49,199,106,0.12)' : 
-                                 'rgba(244,183,64,0.15)',
-                borderColor: payment.isOverdue ? '#EA4335' : 
-                             payment.status === 'Completed' ? '#31C76A' : 
-                             '#F4B740',
+                color: payment.isOverdue ? '#EA4335' : 
+                      payment.status === 'Completed' ? '#31C76A' : 
+                      '#F4B740',
               }
             ]}>
-              <Text style={[
-                styles.statusText,
-                {
-                  color: payment.isOverdue ? '#EA4335' : 
-                        payment.status === 'Completed' ? '#31C76A' : 
-                        '#F4B740',
-                }
-              ]}>
-                {payment.isOverdue ? "Overdue" : payment.status}
-              </Text>
-            </View>
+              {payment.isOverdue ? "Overdue" : payment.status}
+            </Text>
           </View>
         </View>
 
@@ -237,7 +234,7 @@ export default function PaymentDetailsScreen({ route, navigation }) {
               style={styles.repayButton}
               onPress={handleRepayPayment}
             >
-              <Text style={styles.repayButtonText}>去还款</Text>
+              <Text style={styles.repayButtonText}>Repay</Text>
             </TouchableOpacity>
           )}
           

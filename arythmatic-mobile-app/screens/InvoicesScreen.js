@@ -26,6 +26,7 @@ import InvoiceHeader from '../components/Invoice/InvoiceHeader';
 import InvoiceKPIs from '../components/Invoice/InvoiceKPIs';
 import InvoiceSearchAndFilters from '../components/Invoice/InvoiceSearchAndFilters';
 import { useInvoiceMutations, useInvoices } from '../hooks/useInvoices';
+import { customerService } from '../services/customerService';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -54,7 +55,9 @@ const TwoCol = ({ children }) => {
   return <View style={styles.twoCol}>{kids}</View>;
 };
 
-export default function InvoiceScreen({ navigation }) {
+export default function InvoiceScreen() {
+  const [nameCache, setNameCache] = useState({});
+  const fetchingIdsRef = React.useRef(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -426,14 +429,34 @@ export default function InvoiceScreen({ navigation }) {
         />
 
         {/* Invoice Cards */}
-        {invoices.map((invoice) => {
+        {(invoices || []).map((invoice) => {
           const expanded = expandedId === invoice.id;
           const actionsVisible = openActionsId === invoice.id;
+
+          // Resolve customer name by id when needed
+          const cid = invoice?.customer_details?.id 
+            || invoice?.customer_id 
+            || (typeof invoice?.customer === 'string' ? invoice.customer : null);
+          const displayName = cid && nameCache[cid] ? nameCache[cid] : undefined;
+          if (cid && !displayName && !fetchingIdsRef.current.has(cid)) {
+            fetchingIdsRef.current.add(cid);
+            customerService.getById(cid)
+              .then((resp) => {
+                const c = resp?.data || resp;
+                const dn = c?.displayName || c?.name || c?.full_name || c?.email;
+                if (dn) setNameCache(prev => ({ ...prev, [cid]: dn }));
+              })
+              .finally(() => fetchingIdsRef.current.delete(cid));
+          }
+
+          const invoiceForRender = displayName 
+            ? { ...invoice, customer_details: { ...(invoice.customer_details || {}), displayName } } 
+            : invoice;
 
           return (
             <View key={invoice.id}>
               <InvoiceCard
-                invoice={invoice}
+                invoice={invoiceForRender}
                 expanded={expanded}
                 activeTab={activeTab}
                 actionsVisible={actionsVisible}
