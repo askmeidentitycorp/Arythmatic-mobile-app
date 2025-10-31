@@ -75,7 +75,7 @@ const InvoiceCard = ({
   invoice, 
   expanded, 
   activeTab, 
-  onToggle, 
+  onToggleExpand, 
   onAction,
   onTabChange 
 }) => {
@@ -107,7 +107,7 @@ const InvoiceCard = ({
       <TouchableOpacity
         style={styles.rowBetween}
         activeOpacity={0.9}
-        onPress={onToggle}
+        onPress={onToggleExpand}
       >
         <View>
           <Text style={styles.name}>{invoiceNumber}</Text>

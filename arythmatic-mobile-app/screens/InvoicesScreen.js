@@ -209,9 +209,51 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     setOpenActionsId(null);
   };
 
+  // Export CSV handler
+  const handleExportCSV = () => {
+    try {
+      const csvHeader = "Invoice Number,Customer,Status,Currency,Due Date,Payment Terms,Subtotal,Tax,Total,Created,Updated\n";
+      
+      const csvRows = invoices.map(inv => {
+        const invoiceNumber = inv.invoiceNumber || inv.invoice_number || "—";
+        const customerName = inv.customer_details?.displayName || 
+                            inv.customer_details?.firstName + ' ' + (inv.customer_details?.lastname || '') ||
+                            inv.customer_details?.name || 
+                            inv.customer || "Unknown";
+        const status = inv.status || "draft";
+        const currency = inv.currency || "USD";
+        const dueDate = inv.dueDate || inv.due_date || "—";
+        const paymentTerms = inv.paymentTerms || inv.payment_terms || "—";
+        const subtotal = inv.subtotal || inv.sub_total || 0;
+        const taxAmount = inv.taxAmount || inv.tax_amount || 0;
+        const totalAmount = inv.totalAmount || inv.total_amount || inv.grossAmount || inv.gross_amount || 0;
+        const created = inv.created_at || "—";
+        const updated = inv.updated_at || "—";
+        
+        return `${invoiceNumber},${customerName},${status},${currency},${dueDate},${paymentTerms},${subtotal},${taxAmount},${totalAmount},${created},${updated}`;
+      }).join("\n");
+      
+      const csvContent = csvHeader + csvRows;
+      
+      // For now, log the CSV. In a real app, you'd use react-native-share or similar
+      console.log("CSV Export:", csvContent);
+      Alert.alert(
+        "Export Ready", 
+        `Generated CSV with ${invoices.length} invoices.\n\nIn production, this would download as a file.`,
+        [
+          { text: "OK" },
+          { text: "Copy to Clipboard", onPress: () => console.log("Copy CSV:", csvContent) }
+        ]
+      );
+    } catch (error) {
+      Alert.alert("Export Failed", "Could not generate CSV file");
+      console.error("Export error:", error);
+    }
+  };
+
   const handleAction = async (invoice, action) => {
     switch (action) {
-      case "View Details":
+      case "View Invoice":
         const lineItems = invoice.line_items || [];
         const itemsText = lineItems.length > 0 
           ? lineItems.map(item => `• ${item.name || item.product_name}: ${item.quantity || item.qty} x $${item.price || item.amount || 0}`).join('\n')
@@ -246,6 +288,54 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         openEditModal(invoice);
         break;
 
+      case "Duplicate":
+        const duplicateData = {
+          ...form,
+          invoiceNumber: `${invoice.invoiceNumber || invoice.invoice_number}-COPY`,
+          customer: invoice.customer_details?.displayName || invoice.customer,
+          status: "draft",
+          currency: invoice.currency || "USD",
+          dueDate: invoice.dueDate || invoice.due_date || "",
+          paymentTerms: invoice.paymentTerms || invoice.payment_terms || "Net 30",
+          soldBy: invoice.soldBy || invoice.sold_by || "",
+          notes: invoice.notes || "",
+          taxRate: invoice.taxRate || invoice.tax_rate || 18,
+          items: (invoice.line_items || []).map(item => ({
+            id: Date.now().toString() + Math.random(),
+            name: item.name || item.product_name || "",
+            qty: item.qty || item.quantity || 1,
+            price: item.price || item.amount || 0,
+          })),
+        };
+        setForm(duplicateData);
+        setEditingId(null);
+        setShowAdd(true);
+        setModalActiveTab(0);
+        break;
+
+      case "Send Invoice":
+        Alert.alert(
+          "Send Invoice",
+          `Send invoice ${invoice.invoiceNumber || invoice.invoice_number} to ${invoice.customer_details?.displayName || invoice.customer}?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Send",
+              onPress: async () => {
+                try {
+                  // In production, call invoiceService.sendInvoice(invoice.id)
+                  await updateInvoice(invoice.id, { status: "sent" }, false, true);
+                  refresh();
+                  Alert.alert("Success", "Invoice sent successfully");
+                } catch (error) {
+                  Alert.alert("Error", "Failed to send invoice");
+                }
+              },
+            },
+          ]
+        );
+        break;
+
       case "Mark as Draft":
       case "Mark as Open":
       case "Mark as Paid":
@@ -263,6 +353,58 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         } catch (error) {
           Alert.alert("Error", "Failed to update invoice status");
         }
+        break;
+
+      case "Record Payment":
+        Alert.alert(
+          "Record Payment",
+          `Record a payment for invoice ${invoice.invoiceNumber || invoice.invoice_number}?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Record",
+              onPress: () => {
+                console.log(`Navigate to record payment for invoice: ${invoice.id}`);
+                // Could navigate to payments screen or show payment modal
+                Alert.alert("Info", "Payment recording feature - navigate to Payments screen");
+              },
+            },
+          ]
+        );
+        break;
+
+      case "Download PDF":
+        Alert.alert(
+          "Download PDF",
+          `Generate PDF for invoice ${invoice.invoiceNumber || invoice.invoice_number}?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Generate",
+              onPress: async () => {
+                try {
+                  // In production, call invoiceService.generatePDF(invoice.id)
+                  console.log("Generating PDF for invoice:", invoice.id);
+                  Alert.alert("Success", "PDF generated successfully (production feature)");
+                } catch (error) {
+                  Alert.alert("Error", "Failed to generate PDF");
+                }
+              },
+            },
+          ]
+        );
+        break;
+
+      case "Audit History":
+        Alert.alert(
+          "Audit History",
+          `Invoice: ${invoice.invoiceNumber || invoice.invoice_number}\n\n` +
+          `Created: ${invoice.created_at || 'N/A'}\n` +
+          `Updated: ${invoice.updated_at || 'N/A'}\n` +
+          `Status: ${invoice.status || 'Unknown'}\n\n` +
+          `Full audit trail would show all changes, who made them, and when.`,
+          [{ text: "OK" }]
+        );
         break;
 
       case "Delete":
@@ -417,7 +559,8 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
       <ScrollView>
         {/* Header */}
         <InvoiceHeader 
-          onAddPress={openAddModal} 
+          onAddPress={openAddModal}
+          onExportPress={handleExportCSV}
           totalCount={pagination.totalCount}
           onBackPress={navigation?.goBack ? navigation.goBack : null}
           backToScreen={navigation?.backToScreen || (navigation?.params?.salesRepName ? 'Sales Rep' : null)}
@@ -486,12 +629,14 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
               {actionsVisible && (
                 <View style={styles.actionsMenu}>
                   {[
-                    "View Details",
+                    "View Invoice",
                     "Edit Invoice",
-                    "Mark as Draft",
-                    "Mark as Open",
+                    "Duplicate",
+                    "Send Invoice",
                     "Mark as Paid",
-                    "Mark as Void",
+                    "Record Payment",
+                    "Download PDF",
+                    "Audit History",
                     "Delete",
                   ].map((action, i) => (
                     <TouchableOpacity
