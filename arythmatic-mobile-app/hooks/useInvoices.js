@@ -1,5 +1,5 @@
 // hooks/useInvoices.js
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { invoiceService } from '../services/invoiceService';
 
 export const useInvoices = (params = {}, pageSize = 10, useNested = true) => {
@@ -16,6 +16,8 @@ export const useInvoices = (params = {}, pageSize = 10, useNested = true) => {
     hasPrevious: false,
   });
 
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   const fetchInvoices = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -24,7 +26,7 @@ export const useInvoices = (params = {}, pageSize = 10, useNested = true) => {
       const requestParams = {
         page,
         page_size: pageSize,
-        ...params,
+        ...stableParams,
       };
 
       console.log('🔍 Fetching invoices with params:', requestParams);
@@ -73,11 +75,11 @@ export const useInvoices = (params = {}, pageSize = 10, useNested = true) => {
     } finally {
       setLoading(false);
     }
-  }, [params, pageSize, useNested]);
+  }, [stableParams, pageSize, useNested]);
 
   useEffect(() => {
     fetchInvoices(1);
-  }, [JSON.stringify(params), pageSize, useNested]);
+  }, [fetchInvoices]);
 
   const refresh = useCallback(() => {
     fetchInvoices(pagination.currentPage);

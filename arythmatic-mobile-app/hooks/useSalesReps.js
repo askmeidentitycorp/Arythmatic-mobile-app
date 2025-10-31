@@ -1,5 +1,5 @@
 // hooks/useSalesReps.js
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { salesRepService } from '../services/salesRepService';
 
 export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) => {
@@ -16,6 +16,8 @@ export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) =
     hasPrevious: false,
   });
 
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   const fetchSalesReps = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -24,7 +26,7 @@ export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) =
       const requestParams = {
         page,
         page_size: pageSize,
-        ...params,
+        ...stableParams,
       };
 
       const response = await salesRepService.getAll(requestParams);
@@ -90,11 +92,11 @@ export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) =
     } finally {
       setLoading(false);
     }
-  }, [params, pageSize]);
+  }, [stableParams, pageSize]);
 
   useEffect(() => {
     fetchSalesReps(1);
-  }, [JSON.stringify(params), pageSize]);
+  }, [fetchSalesReps]);
 
   const refresh = useCallback(() => {
     fetchSalesReps(pagination.currentPage);

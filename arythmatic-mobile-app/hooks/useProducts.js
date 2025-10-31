@@ -1,5 +1,5 @@
 // hooks/useProducts.js
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { productService } from '../services/productService';
 
 export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
@@ -16,6 +16,8 @@ export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
     hasPrevious: false,
   });
 
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   const fetchProducts = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -24,7 +26,7 @@ export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
       const requestParams = {
         page,
         page_size: pageSize,
-        ...params,
+        ...stableParams,
       };
       
       // DEBUG: Log all request details
@@ -89,11 +91,11 @@ export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
     } finally {
       setLoading(false);
     }
-  }, [params, pageSize, useNested]);
+  }, [stableParams, pageSize, useNested]);
 
   useEffect(() => {
     fetchProducts(1);
-  }, [JSON.stringify(params), pageSize, useNested]);
+  }, [fetchProducts]);
 
   const refresh = useCallback(() => {
     fetchProducts(pagination.currentPage);

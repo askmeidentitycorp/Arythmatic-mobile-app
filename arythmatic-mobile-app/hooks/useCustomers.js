@@ -1,6 +1,6 @@
 // hooks/useCustomers.js
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { customerService } from '../services/customerService';
 
 export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
@@ -16,6 +16,8 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
     hasPrevious: false,
   });
 
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   const fetchCustomers = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -24,7 +26,7 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
       const requestParams = {
         page,
         page_size: pageSize,
-        ...params,
+        ...stableParams,
       };
 
       const response = useNested
@@ -66,7 +68,7 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
     } finally {
       setLoading(false);
     }
-  }, [params, useNested]);
+  }, [stableParams, pageSize, useNested]);
 
   // Initial load
   useEffect(() => {
