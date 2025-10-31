@@ -199,7 +199,9 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         });
         // Try to extract customer info from various sources
         const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
-        let customerName = payment.customer_details?.display_name || 
+        let customerName = payment.customer_details?.tags?.display_name || 
+                           payment.customer_details?.tags?.displayName ||
+                           payment.customer_details?.display_name || 
                            payment.customer_details?.displayName ||
                            payment.customer_details?.name ||
                            payment.customer?.display_name ||
