@@ -73,6 +73,10 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
   // Notes/Product management modals
   const [notesModal, setNotesModal] = useState({ open: false, interaction: null, newNote: "" });
   const [productsModal, setProductsModal] = useState({ open: false, interaction: null, items: [] });
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState([]);
+  const [statusHistoryModal, setStatusHistoryModal] = useState({ open: false, interaction: null });
+  const [auditHistoryModal, setAuditHistoryModal] = useState({ open: false, interaction: null });
   const [openActionsId, setOpenActionsId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [repFilter, setRepFilter] = useState(null);
@@ -193,8 +197,10 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         setProductsModal({ open: true, interaction, items: interaction.products || [] });
         break;
       case "Status History":
+        setStatusHistoryModal({ open: true, interaction });
+        break;
       case "Audit History":
-        Alert.alert(action, 'Not implemented yet');
+        setAuditHistoryModal({ open: true, interaction });
         break;
 
       case "Mark as New":
@@ -331,6 +337,23 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
 
   // Metrics
   const metrics = useInteractionMetrics();
+
+  // Debounced product search for products modal
+  useEffect(() => {
+    let timeoutId;
+    if (productsModal.open && productSearch.trim().length >= 2) {
+      timeoutId = setTimeout(async () => {
+        try {
+          const res = await productService.getAll({ search: productSearch.trim(), page: 1, page_size: 5 });
+          const list = res?.results || res || [];
+          setProductResults(list);
+        } catch {}
+      }, 300);
+    } else {
+      setProductResults([]);
+    }
+    return () => timeoutId && clearTimeout(timeoutId);
+  }, [productsModal.open, productSearch]);
 
   // Loading state
   if (loading && interactions.length === 0) {
@@ -543,28 +566,38 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
               </View>
               <ScrollView contentContainerStyle={{ padding: 14 }}>
                 {(productsModal.items || []).map((p, i) => (
-                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <View key={`sel_${i}`} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                     <Text style={[styles.detailText, { flex: 1 }]}>• {p.name || p.label || p}</Text>
                     <TouchableOpacity onPress={() => setProductsModal((m) => ({ ...m, items: m.items.filter((_, idx) => idx !== i) }))}>
                       <Text style={{ color: '#ff6b6b', fontWeight: '700' }}>Remove</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
+
                 <LabeledInput
-                  label="Add product name"
-                  value={productsModal.pendingName || ''}
-                  onChangeText={(v) => setProductsModal((m) => ({ ...m, pendingName: v }))}
-                  placeholder="Product name / SKU"
+                  label="Search products"
+                  value={productSearch}
+                  onChangeText={setProductSearch}
+                  placeholder="Type at least 2 characters..."
                 />
-                <TouchableOpacity
-                  style={[styles.btnPrimary, { alignSelf: 'flex-start', marginTop: 8 }]}
-                  onPress={() => {
-                    if (!productsModal.pendingName?.trim()) return;
-                    setProductsModal((m) => ({ ...m, items: [...m.items, { name: m.pendingName.trim() }], pendingName: '' }));
-                  }}
-                >
-                  <Text style={styles.btnPrimaryText}>Add</Text>
-                </TouchableOpacity>
+
+                {productResults.map((p) => (
+                  <View key={`res_${p.id || p.sku || p.name}`} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={[styles.detailText, { flex: 1 }]}>
+                      {p.label || p.name} {p.sku ? `• ${p.sku}` : ''}
+                    </Text>
+                    <TouchableOpacity onPress={() => {
+                      // prevent duplicates by label/sku
+                      const key = (x) => (x.sku || x.label || x.name || '').toLowerCase();
+                      setProductsModal((m) => {
+                        if (m.items.some((x) => key(x) === key(p))) return m;
+                        return { ...m, items: [...m.items, { id: p.id, name: p.label || p.name, sku: p.sku }] };
+                      });
+                    }}>
+                      <Text style={{ color: colors.primary, fontWeight: '700' }}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </ScrollView>
               <View style={styles.modalFooter}>
                 <TouchableOpacity style={styles.btnGhost} onPress={() => setProductsModal({ open: false, interaction: null, items: [] })}>
@@ -590,6 +623,58 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         </KeyboardAvoidingView>
       </Modal>
       
+      {/* Status History Modal */}
+      <Modal visible={statusHistoryModal.open} transparent animationType="fade">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Status History</Text>
+                <TouchableOpacity onPress={() => setStatusHistoryModal({ open: false, interaction: null })}>
+                  <Text style={styles.closeX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 14 }}>
+                {(statusHistoryModal.interaction?.status_history || []).map((h, i) => (
+                  <Text key={i} style={[styles.detailText, { marginBottom: 6 }]}>
+                    • {h.status || h} — {fmtDate(h.timestamp || h.changed_at || statusHistoryModal.interaction?.updated_at)}
+                  </Text>
+                ))}
+                {!(statusHistoryModal.interaction?.status_history || []).length && (
+                  <Text style={styles.detailText}>No status history available.</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Audit History Modal */}
+      <Modal visible={auditHistoryModal.open} transparent animationType="fade">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Audit History</Text>
+                <TouchableOpacity onPress={() => setAuditHistoryModal({ open: false, interaction: null })}>
+                  <Text style={styles.closeX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 14 }}>
+                {(auditHistoryModal.interaction?.audit_logs || auditHistoryModal.interaction?.audit_history || []).map((h, i) => (
+                  <Text key={i} style={[styles.detailText, { marginBottom: 6 }]}>
+                    • {h.action || h.event || 'Change'} — {fmtDate(h.timestamp || h.at)}
+                  </Text>
+                ))}
+                {!(auditHistoryModal.interaction?.audit_logs || auditHistoryModal.interaction?.audit_history || []).length && (
+                  <Text style={styles.detailText}>No audit history available.</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Create Interaction Modal */}
       <Modal visible={showAdd} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
