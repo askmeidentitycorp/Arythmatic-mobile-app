@@ -355,7 +355,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
+  }, [selectedPayment, handleCloseActionSheet, refreshPayments]);
 
   const handleRefundPayment = useCallback(() => {
     console.log('Refund payment:', selectedPayment?.id);
@@ -382,7 +382,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
+  }, [selectedPayment, handleCloseActionSheet, refreshPayments]);
 
   const handleAuditHistory = useCallback(() => {
     console.log('View audit history:', selectedPayment?.id);
@@ -415,7 +415,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
+  }, [selectedPayment, handleCloseActionSheet, refreshPayments]);
 
   const toggleFilters = useCallback(() => {
     setShowFilters(prev => !prev);

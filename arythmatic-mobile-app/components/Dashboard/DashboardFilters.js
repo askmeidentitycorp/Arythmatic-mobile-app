@@ -1,57 +1,68 @@
 // components/Dashboard/DashboardFilters.js
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Modal, Pressable } from 'react-native';
 import { colors } from '../../constants/config';
 
-const SimplePicker = ({ label, value, items, onValueChange, selectedKey }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
+const SimplePicker = ({ label, value, items, onValueChange }) => {
+  const [showModal, setShowModal] = useState(false);
   const displayValue = items.find(item => item.value === value)?.label || label;
 
   return (
-    <View style={styles.pickerContainer}>
+    <>
       <TouchableOpacity 
         style={styles.pickerButton}
-        onPress={() => setShowDropdown(!showDropdown)}
+        onPress={() => setShowModal(true)}
       >
         <Text style={styles.pickerText}>{displayValue}</Text>
-        <Text style={[styles.pickerArrow, showDropdown && styles.pickerArrowUp]}>▼</Text>
+        <Text style={styles.pickerArrow}>▼</Text>
       </TouchableOpacity>
       
-      {showDropdown && (
-        <View style={styles.dropdown}>
-          <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-            {items.map((item, index) => (
-              <TouchableOpacity
-                key={item.key || item.value || index}
-                style={[
-                  styles.dropdownItem,
-                  item.value === value && styles.dropdownItemSelected
-                ]}
-                onPress={() => {
-                  onValueChange(item.value);
-                  setShowDropdown(false);
-                }}
-              >
-                <Text style={[
-                  styles.dropdownItemText,
-                  item.value === value && styles.dropdownItemTextSelected
-                ]}>
-                  {item.label}
-                </Text>
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setShowModal(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{label}</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-      
-      {showDropdown && (
-        <TouchableOpacity 
-          style={styles.dropdownOverlay} 
-          activeOpacity={1} 
-          onPress={() => setShowDropdown(false)}
-        />
-      )}
-    </View>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {items.map((item, index) => (
+                <TouchableOpacity
+                  key={item.key || item.value || index}
+                  style={[
+                    styles.modalItem,
+                    item.value === value && styles.modalItemSelected
+                  ]}
+                  onPress={() => {
+                    onValueChange(item.value);
+                    setShowModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.modalItemText,
+                    item.value === value && styles.modalItemTextSelected
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {item.value === value && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 };
 
@@ -117,11 +128,6 @@ const styles = StyleSheet.create({
     flexBasis: '48%',
     marginRight: 10,
     marginBottom: 8,
-    zIndex: 1000,
-  },
-  pickerContainer: {
-    position: 'relative',
-    zIndex: 1000,
   },
   pickerButton: {
     backgroundColor: colors.panel,
@@ -143,60 +149,65 @@ const styles = StyleSheet.create({
   pickerArrow: {
     color: colors.subtext,
     fontSize: 12,
-    transform: [{ rotate: '0deg' }],
   },
-  pickerArrowUp: {
-    transform: [{ rotate: '180deg' }],
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  dropdownOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
+  modalContent: {
     backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    maxHeight: 200,
-    zIndex: 1001,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
   },
-  dropdownList: {
-    maxHeight: 200,
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  dropdownItemSelected: {
-    backgroundColor: colors.primary + '20',
-  },
-  dropdownItemText: {
-    fontSize: 14,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
   },
-  dropdownItemTextSelected: {
+  modalClose: {
+    fontSize: 24,
+    color: colors.subtext,
+    fontWeight: '300',
+  },
+  modalList: {
+    maxHeight: 400,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalItemSelected: {
+    backgroundColor: colors.primary + '15',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  modalItemTextSelected: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: 20,
+    color: colors.primary,
+    fontWeight: '700',
   },
   refreshBtn: { 
     backgroundColor: colors.primary, 
