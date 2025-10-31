@@ -2,7 +2,9 @@ import apiClient from './apiClient';
 
 export const paymentService = {
   getAll: (params) => apiClient.get('/payments/', params),
+  getAllNested: (params) => apiClient.get('/payments-nested/', params),
   getById: (id) => apiClient.get(`/payments/${id}/`),
+  getByIdNested: (id) => apiClient.get(`/payments-nested/${id}/`),
   create: (data) => apiClient.post('/payments/', data),
   update: (id, data) => apiClient.put(`/payments/${id}/`, data),
   delete: (id) => apiClient.delete(`/payments/${id}/`),
@@ -15,8 +17,8 @@ export const paymentService = {
   getCounts: async () => {
     try {
       console.log('📊 Fetching payment counts from API...');
-      // Fetch all payments to calculate accurate counts
-      const response = await apiClient.get('/payments/', { page: 1, page_size: 10000 });
+      // Fetch all payments to calculate accurate counts (use nested to get customer details)
+      const response = await apiClient.get('/payments-nested/', { page: 1, page_size: 10000 });
       const payments = response?.results || response?.data?.results || [];
       
       console.log(`📊 Retrieved ${payments.length} payments for counting`);

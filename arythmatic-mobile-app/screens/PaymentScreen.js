@@ -184,8 +184,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         page_size: 1000, // Get all payments for proper calculation
       };
       
-      console.log('🔵 Calling paymentService.getAll with params:', params);
-      const response = await paymentService.getAll(params);
+      console.log('🔵 Calling paymentService.getAllNested with params:', params);
+      const response = await paymentService.getAllNested(params);
       console.log('🔵 Raw API Response sample (first payment):', JSON.stringify((response.results || [])[0], null, 2));
       
       // Transform API response - Map actual API field names
@@ -199,18 +199,21 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         });
         // Try to extract customer info from various sources
         const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
-        let customerName = payment.customer_details?.tags?.display_name || 
+        // The customer name is in tags.displayName (camelCase) in the nested API response
+        let customerName = payment.tags?.displayName || 
+                           payment.tags?.display_name ||
                            payment.customer_details?.tags?.displayName ||
-                           payment.customer_details?.display_name || 
+                           payment.customer_details?.tags?.display_name ||
                            payment.customer_details?.displayName ||
+                           payment.customer_details?.display_name || 
                            payment.customer_details?.name ||
+                           payment.customer?.displayName ||
                            payment.customer?.display_name ||
-                           payment.customer?.displayName || 
                            payment.customer?.name || 
                            payment.customer_name || 
                            '';
         
-        console.log(`🔍 Payment ${payment.id}: customerId=${customerId}, customerName=${customerName || '(empty)'}`);
+        console.log(`🔍 Payment ${payment.id}: customerId=${customerId}, customerName=${customerName || '(empty)'}, tags=`, payment.tags);
         
         // If no customer name found, leave empty to resolve asynchronously
         
