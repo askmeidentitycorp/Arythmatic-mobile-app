@@ -116,6 +116,43 @@ export const useProducts = (params = {}, pageSize = 10, useNested = true) => {
   };
 };
 
+export const useProductMetrics = () => {
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [digitalCount, setDigitalCount] = useState(0);
+  const [physicalCount, setPhysicalCount] = useState(0);
+  const [serviceCount, setServiceCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [totalRes, activeRes, digitalRes, physicalRes, serviceRes] = await Promise.all([
+        productService.getAll({ page: 1, page_size: 1 }),
+        productService.getAll({ page: 1, page_size: 1, isActive: true }),
+        productService.getAll({ page: 1, page_size: 1, productType: 'digital' }),
+        productService.getAll({ page: 1, page_size: 1, productType: 'physical' }),
+        productService.getAll({ page: 1, page_size: 1, productType: 'service' }),
+      ]);
+      setTotalCount(totalRes?.count || 0);
+      setActiveCount(activeRes?.count || 0);
+      setDigitalCount(digitalRes?.count || 0);
+      setPhysicalCount(physicalRes?.count || 0);
+      setServiceCount(serviceRes?.count || 0);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch product metrics');
+      setTotalCount(0); setActiveCount(0); setDigitalCount(0); setPhysicalCount(0); setServiceCount(0);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  const refresh = useCallback(() => fetchMetrics(), [fetchMetrics]);
+
+  return { totalCount, activeCount, digitalCount, physicalCount, serviceCount, loading, error, refresh };
+};
+
 export const useProduct = (id, useNested = true) => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);

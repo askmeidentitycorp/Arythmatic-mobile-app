@@ -56,23 +56,19 @@ const fmtDate = (iso) => {
 };
 
 const ProductCard = ({ product, onAction }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  
   // Extract data with multiple fallback options
   const label = product.label || product.name || "Unnamed Product";
   const description = product.description || "No description available";
   
-  // Handle product type (API returns lowercase)
   const productType = (product.productType || product.product_type || "digital").toLowerCase();
   const displayProductType = productType.charAt(0).toUpperCase() + productType.slice(1);
-  
-  // Handle active status
   const isActive = product.isActive !== undefined ? product.isActive : product.is_active !== false;
   
-  // Handle price - check multiple locations
   let price = 0;
   let currency = "USD";
-  
   if (product.prices && product.prices.length > 0) {
-    // Get first price from prices array
     const priceObj = product.prices[0];
     price = priceObj.price || priceObj.amount || 0;
     currency = priceObj.currency || "USD";
@@ -85,14 +81,21 @@ const ProductCard = ({ product, onAction }) => {
   const category = product.category || "General";
   const createdAt = product.created_at || product.createdAt;
 
-  console.log('ProductCard Debug:', {
-    label,
-    price,
-    currency,
-    productType: displayProductType,
-    isActive,
-    rawProduct: product
-  });
+  const actions = [
+    'View Details',
+    'Edit Product',
+    'Duplicate',
+    'Manage Pricing',
+    'Manage Notes',
+    'Audit History',
+    isActive ? 'Deactivate' : 'Activate',
+    'Delete',
+  ];
+
+  const handlePressAction = (action) => {
+    setMenuOpen(false);
+    onAction?.(product, action);
+  };
 
   return (
     <View style={styles.productCard}>
@@ -106,7 +109,7 @@ const ProductCard = ({ product, onAction }) => {
         </View>
         <TouchableOpacity
           style={styles.dotsButton}
-          onPress={() => onAction(product)}
+          onPress={() => setMenuOpen(!menuOpen)}
         >
           <Text style={styles.dotsText}>⋮</Text>
         </TouchableOpacity>
@@ -136,6 +139,16 @@ const ProductCard = ({ product, onAction }) => {
           <Text style={styles.productDetailValue}>{fmtDate(createdAt)}</Text>
         </View>
       </View>
+
+      {menuOpen && (
+        <View style={styles.actionsMenu}>
+          {actions.map((a) => (
+            <TouchableOpacity key={a} style={styles.actionItem} onPress={() => handlePressAction(a)}>
+              <Text style={[styles.actionText, (a === 'Delete' || a === 'Deactivate') && { color: '#ff6b6b' }]}>{a}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 };
@@ -203,6 +216,23 @@ const styles = StyleSheet.create({
     fontSize: 20, 
     color: colors.subtext 
   },
+  actionsMenu: {
+    position: 'absolute',
+    right: 14,
+    top: 38,
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 8,
+    zIndex: 999,
+    elevation: 8,
+    minWidth: 160,
+  },
+  actionItem: {
+    paddingVertical: 8,
+  },
+  actionText: { color: colors.text, fontSize: 14 },
 });
 
 export default ProductCard;

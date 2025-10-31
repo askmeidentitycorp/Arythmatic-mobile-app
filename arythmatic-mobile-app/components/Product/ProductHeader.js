@@ -2,16 +2,21 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../constants/config';
 
-const ProductHeader = ({ onAddPress, totalCount }) => {
+const ProductHeader = ({ onAddPress, onExport, totalCount }) => {
   return (
     <View style={styles.headerRow}>
       <View>
         <Text style={styles.title}>Products</Text>
         <Text style={styles.subtitle}>{totalCount} total products</Text>
       </View>
-      <TouchableOpacity style={styles.addBtn} onPress={onAddPress}>
-        <Text style={styles.addBtnText}>＋ Add</Text>
-      </TouchableOpacity>
+      <View style={styles.actionsRow}>
+        <TouchableOpacity style={[styles.addBtn, styles.exportBtn]} onPress={onExport}>
+          <Text style={styles.exportText}>Export CSV</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addBtn} onPress={onAddPress}>
+          <Text style={styles.addBtnText}>Add</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -34,6 +39,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 2,
   },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addBtn: {
     backgroundColor: colors.primary,
     paddingHorizontal: 12,
@@ -44,6 +50,8 @@ const styles = StyleSheet.create({
     color: "#fff", 
     fontWeight: "700" 
   },
+  exportBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
+  exportText: { color: colors.text, fontWeight: '700' },
 });
 
 export default ProductHeader;

@@ -22,6 +22,8 @@ import ProductKPIs from '../components/Product/ProductKPIs';
 import {
   useProductMutations,
   useProducts
+  useProducts,
+  useProductMetrics
 } from '../hooks/useProducts';
 
 export default function ProductScreen({ navigation }) {
@@ -69,7 +71,9 @@ export default function ProductScreen({ navigation }) {
     pagination,
     refresh,
     goToPage,
-  } = useProducts(searchParams, 10, false); // Use simple data for product list - faster loading
+} = useProducts(searchParams, 10, false);
+
+  const { totalCount: totals, activeCount, digitalCount, physicalCount, serviceCount } = useProductMetrics();
 
   const {
     createProduct,
@@ -141,8 +145,6 @@ export default function ProductScreen({ navigation }) {
   ];
 
   const handleProductAction = async (product, action) => {
-    console.log('Product Action:', { action, product: product.label });
-
     switch (action) {
       case "Deactivate":
       case "Activate":
@@ -169,6 +171,28 @@ export default function ProductScreen({ navigation }) {
         );
         break;
 
+      case "View Details":
+        Alert.alert('Product Details', `${product.label}\nType: ${product.productType}\nSKU: ${product.sku || '—'}`);
+        break;
+      case "Duplicate":
+        try {
+          const dup = { ...product, id: undefined, label: `${product.label} Copy` };
+          await createProduct(dup, true);
+          refresh();
+          Alert.alert('Success', 'Product duplicated');
+        } catch (e) {
+          Alert.alert('Error', 'Failed to duplicate');
+        }
+        break;
+      case "Manage Pricing":
+        Alert.alert('Manage Pricing', 'Not implemented yet');
+        break;
+      case "Manage Notes":
+        Alert.alert('Manage Notes', 'Not implemented yet');
+        break;
+      case "Audit History":
+        Alert.alert('Audit History', 'Not implemented yet');
+        break;
       case "Delete":
         Alert.alert(
           "Confirm Delete",
@@ -203,6 +227,39 @@ export default function ProductScreen({ navigation }) {
     }
   };
   
+// Export CSV
+  const handleExportCSV = async () => {
+    try {
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await productService.getAll({ ...searchParams, page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+      const headers = ['id','label','productType','sku','category','price','isActive'];
+      const csv = [headers.join(',')].concat(
+        rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
+      ).join('\n');
+      const { Platform, Share } = await import('react-native');
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.setAttribute('download', 'products.csv');
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        await Share.share({ title: 'Products CSV', message: csv });
+      }
+    } catch (e) {
+      Alert.alert('Export Failed', e.message || 'Could not export CSV');
+    }
+  };
+
   // Handle Add Product
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -274,12 +331,16 @@ export default function ProductScreen({ navigation }) {
           </TouchableOpacity>
         </View>
         {/* Header */}
-        <ProductHeader onAddPress={handleAddProduct} />
+        <ProductHeader onAddPress={handleAddProduct} onExport={handleExportCSV} totalCount={totals} />
 
         {/* KPIs - Pass current page products and total count */}
         <ProductKPIs
           products={products}
-          totalCount={pagination.totalCount}
+          totalCount={totals}
+          activeCount={activeCount}
+          digitalCount={digitalCount}
+          physicalCount={physicalCount}
+          serviceCount={serviceCount}
         />
 
         {/* Product Cards */}
