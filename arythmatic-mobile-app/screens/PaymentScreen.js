@@ -186,20 +186,31 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       
       console.log('🔵 Calling paymentService.getAll with params:', params);
       const response = await paymentService.getAll(params);
-      console.log('🔵 Raw API Response:', JSON.stringify(response, null, 2));
+      console.log('🔵 Raw API Response sample (first payment):', JSON.stringify((response.results || [])[0], null, 2));
       
       // Transform API response - Map actual API field names
       const transformedPayments = (response.results || []).map(payment => {
+        console.log('🔍 Processing payment:', {
+          id: payment.id,
+          customer: payment.customer,
+          customer_id: payment.customer_id,
+          customer_details: payment.customer_details,
+          invoice: payment.invoice
+        });
         // Try to extract customer info from various sources
         const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
-        const customerName = payment.customer_details?.display_name || 
+        let customerName = payment.customer_details?.display_name || 
                            payment.customer_details?.displayName ||
                            payment.customer_details?.name ||
                            payment.customer?.display_name ||
                            payment.customer?.displayName || 
                            payment.customer?.name || 
                            payment.customer_name || 
-                           ''; // leave empty to resolve asynchronously
+                           '';
+        
+        console.log(`🔍 Payment ${payment.id}: customerId=${customerId}, customerName=${customerName || '(empty)'}`);
+        
+        // If no customer name found, leave empty to resolve asynchronously
         
         return {
           ...payment,
