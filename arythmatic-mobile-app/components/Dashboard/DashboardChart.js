@@ -6,9 +6,6 @@ import { colors } from '../../constants/config';
 const { width: screenWidth } = Dimensions.get("window");
 
 const BarChart = React.memo(({ data, width, height, loading }) => {
-  console.log('📊 Chart received data:', data);
-  console.log('📊 Chart data type:', typeof data);
-  console.log('📊 Chart data array check:', Array.isArray(data));
   
   if (loading) {
     return (
@@ -27,7 +24,6 @@ const BarChart = React.memo(({ data, width, height, loading }) => {
   }
 
   const maxValue = Math.max(...data.map(item => Number(item.value) || 0));
-  console.log('📊 Max value:', maxValue);
   
   if (maxValue === 0) {
     return (
@@ -43,13 +39,6 @@ const BarChart = React.memo(({ data, width, height, loading }) => {
         {data.map((item, index) => {
           const itemValue = Number(item.value) || 0;
           const barHeight = maxValue > 0 ? (itemValue / maxValue) * (height - 80) : 0;
-          
-          console.log(`📊 Bar ${index}:`, {
-            label: item.label,
-            value: itemValue,
-            barHeight,
-            color: item.color
-          });
           
           return (
             <View key={index} style={styles.barContainer}>
@@ -82,8 +71,6 @@ const BarChart = React.memo(({ data, width, height, loading }) => {
 });
 
 const DashboardChart = ({ chartData, loading }) => {
-  console.log('🔥 DashboardChart props:', { chartData, loading });
-  
   const chartHeight = 220;
   const chartWidth = screenWidth - 32;
   

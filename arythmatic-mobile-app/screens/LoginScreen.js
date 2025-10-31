@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -15,45 +14,31 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../constants/config';
+import { TEST_CONFIG } from '../constants/authConfig';
 
 export default function LoginScreen() {
   const { signIn, isLoading, error, clearError } = useAuth();
 
-  // Mock login form state
-  const [email, setEmail] = useState('admin@test.com');
-  const [password, setPassword] = useState('admin123');
+  // Login form state (prefilled for test provider)
+  const [email, setEmail] = useState(TEST_CONFIG.defaultUsername || '');
+  const [password, setPassword] = useState(TEST_CONFIG.defaultPassword || '');
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState(null);
 
-  // Handle mock login
+  // Handle login
   const handleLogin = useCallback(async () => {
+    setFormError(null);
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Validation Error', 'Please enter both email and password');
+      setFormError('Please enter both email and password');
       return;
     }
-
-    // Mock credential validation
-    const validCredentials = [
-      { email: 'admin@test.com', password: 'admin123' },
-      { email: 'test@test.com', password: 'password123' },
-      { email: 'demo@demo.com', password: 'demo123' },
-      { email: 'user@example.com', password: 'user123' }
-    ];
-
-    const isValidCredential = validCredentials.some(
-      cred => cred.email === email.trim() && cred.password === password
-    );
-
-    if (!isValidCredential) {
-      Alert.alert('Login Failed', 'Invalid credentials. Try:\n• admin@test.com / admin123\n• test@test.com / password123\n• demo@demo.com / demo123');
-      return;
-    }
-
     try {
       clearError();
-      await signIn({ username: email.trim(), password });
+      await signIn({ username: email.trim().toLowerCase(), password });
       // Navigation will be handled by App.js based on auth state
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      // Error is managed by AuthContext; optionally show local error
+      // setFormError(error.message);
     }
   }, [email, password, signIn, clearError]);
 
@@ -69,19 +54,9 @@ export default function LoginScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>🧮</Text>
           <Text style={styles.title}>Arythmatic</Text>
-          <Text style={styles.subtitle}>Mock Login - Development Mode</Text>
         </View>
 
-        {/* Test Credentials Info */}
-        <View style={styles.testInfo}>
-          <Text style={styles.testInfoTitle}>Test Credentials</Text>
-          <Text style={styles.testInfoText}>• admin@test.com / admin123</Text>
-          <Text style={styles.testInfoText}>• test@test.com / password123</Text>
-          <Text style={styles.testInfoText}>• demo@demo.com / demo123</Text>
-          <Text style={styles.testInfoText}>• user@example.com / user123</Text>
-        </View>
 
         {/* Login Form */}
         <View style={styles.form}>
@@ -118,7 +93,7 @@ export default function LoginScreen() {
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Text style={styles.passwordToggleText}>
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? 'Hide' : 'Show'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -127,32 +102,26 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={[styles.button, styles.primaryButton]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || !email.trim() || !password.trim()}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.buttonText}>Mock Sign In</Text>
+              <Text style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
         </View>
 
         {/* Error Display */}
-        {error && (
+        {(formError || error) && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={clearError} style={styles.errorDismiss}>
+            <Text style={styles.errorText}>{formError || error}</Text>
+            <TouchableOpacity onPress={() => { setFormError(null); clearError(); }} style={styles.errorDismiss}>
               <Text style={styles.errorDismissText}>Dismiss</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Secure Business Management Platform
-          </Text>
-        </View>
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

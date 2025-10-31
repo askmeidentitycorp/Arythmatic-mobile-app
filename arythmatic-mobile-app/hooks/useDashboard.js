@@ -7,12 +7,32 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState(null);
   
-  // Updated currency conversion rates to match web dashboard ($3,008 = ₹264,612)
-  const exchangeRates = {
+  // Exchange rates
+  // We keep direct mappings for USD/EUR/INR as tuned earlier, and compute other pairs via USD base rates
+  const directRates = {
     USD: { INR: 87.94, EUR: 0.85, USD: 1 },
     INR: { USD: 0.01137, EUR: 0.00967, INR: 1 },
-    EUR: { USD: 1.18, INR: 103.46, EUR: 1 }
+    EUR: { USD: 1.18, INR: 103.46, EUR: 1 },
+  };
+  // USD per unit for supported currencies (approximate; used when direct mapping not present)
+  const usdPerUnit = {
+    USD: 1,
+    EUR: 1.1765,
+    GBP: 1.28,
+    INR: 0.01137,
+    JPY: 0.0067,
+    CNY: 0.137,
+    CAD: 0.73,
+    AUD: 0.66,
+  };
+  const getRate = (from, to) => {
+    const f = (from || '').toUpperCase();
+    const t = (to || '').toUpperCase();
+    if (directRates[f]?.[t] != null) return directRates[f][t];
+    if (usdPerUnit[f] && usdPerUnit[t]) return usdPerUnit[f] / usdPerUnit[t];
+    return 1;
   };
 
   // Convert date range to period parameter
@@ -91,29 +111,21 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
         let convertedRevenue = 0;
         let totalSalesFromAll = 0;
         
-        console.log('💰 FIXED: Converting all currencies to', currency.toUpperCase());
-        
         availableCurrencies.forEach(fromCurrency => {
           const currData = revenue.summary_by_currency[fromCurrency];
           const amount = currData.total_revenue || 0;
           const sales = currData.sales_count || 0;
           
-          console.log(`💱 Converting ${fromCurrency} ${amount} to ${currency.toUpperCase()}`);
-          
           // Convert to selected currency
-          const rate = exchangeRates[fromCurrency]?.[currency.toUpperCase()] || 1;
+          const rate = getRate(fromCurrency, currency.toUpperCase());
           const convertedAmount = amount * rate;
           convertedRevenue += convertedAmount;
           totalSalesFromAll += sales;
-          
-          console.log(`💱 ${fromCurrency} ${amount} × ${rate} = ${convertedAmount} ${currency.toUpperCase()}`);
         });
         
         totalRevenue = convertedRevenue;
         totalSales = totalSalesFromAll;
         isConverted = availableCurrencies.length > 1 || !availableCurrencies.includes(currency.toUpperCase());
-        
-        console.log(`💰 FIXED Total Revenue: ${totalRevenue} ${currency.toUpperCase()} (converted from ${availableCurrencies.length} currencies)`);
       }
     } else {
       // Fallback to old structure
@@ -137,18 +149,6 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     
     // NEW: Team Performance from team performance data
     const teamPerformance = analyticsData.teamPerformance?.summary?.average_completion_rate || 0;
-
-    console.log('📊 FIXED KPI Data:', {
-      selectedCurrency: currency.toUpperCase(),
-      totalRevenue,
-      totalSales,
-      activeCustomers,
-      conversionRate,
-      dealsInPipeline,
-      teamPerformance,
-      revenueByCurrency: revenue.summary_by_currency,
-      totalSalesFromAPI: revenue.total_sales_count
-    });
 
     return [
       {
@@ -190,6 +190,36 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     ];
   }, [analyticsData, formatCurrency, currency]);
 
+  // Live rates details for revenue card
+  const liveRates = useMemo(() => {
+    const selected = currency.toUpperCase();
+    const rev = analyticsData?.revenue?.summary_by_currency || {};
+    const sources = Object.keys(rev);
+    if (!sources.length) return null;
+
+    const details = sources.map(src => {
+      const amount = rev[src]?.total_revenue || 0;
+      const rate = getRate(src, selected);
+      const converted = amount * rate;
+      return { from: src, to: selected, amount, rate, converted };
+    });
+
+    const totalConverted = details.reduce((sum, d) => sum + d.converted, 0);
+    const lastUpdated = analyticsData?.overview?.last_updated || analyticsData?.revenue?.last_updated || ratesUpdatedAt || new Date().toISOString();
+
+    return {
+      target: selected,
+      details,
+      totalConverted,
+      original: sources.map(src => ({ currency: src, amount: rev[src]?.total_revenue || 0 })),
+      lastUpdated,
+    };
+  }, [analyticsData, currency]);
+
+  const refreshRates = useCallback(() => {
+    setRatesUpdatedAt(new Date().toISOString());
+  }, []);
+
   // Helper function to create default chart data
   const createDefaultChartData = useCallback(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -213,11 +243,8 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
 
   // FIXED: Chart data from analytics with proper currency handling
   const chartData = useMemo(() => {
-    console.log('🔍 FIXED: Checking chart data sources...');
-    console.log('📊 Analytics data:', analyticsData);
     
     if (!analyticsData?.revenue) {
-      console.log('📈 No revenue data, creating default chart');
       return createDefaultChartData();
     }
 
@@ -226,7 +253,6 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     
     // FIXED: Handle trends_by_currency properly
     if (revenue.trends_by_currency && Array.isArray(revenue.trends_by_currency)) {
-      console.log('📈 FIXED: Using trends_by_currency:', revenue.trends_by_currency);
       
       trends = revenue.trends_by_currency.map(trend => {
         // Get revenue for selected currency from the trend
@@ -270,10 +296,8 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       }
     }
 
-    console.log('📈 FIXED: Processed trends:', trends);
 
     if (!trends.length || trends.every(t => t.value === 0)) {
-      console.log('📈 No valid trend data, using default');
       return createDefaultChartData();
     }
 
@@ -291,9 +315,6 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     if (!Array.isArray(products)) {
       return [];
     }
-    
-    console.log('🛍️ FIXED: Products Data:', products);
-    console.log('💰 Selected currency for products:', currency.toUpperCase());
 
     return products.slice(0, 10).map(product => {
       // FIXED: Handle currency-specific revenue for products
@@ -322,9 +343,6 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     if (!Array.isArray(salesReps)) {
       return [];
     }
-    
-    console.log('👥 FIXED: Sales Reps Data:', salesReps);
-    console.log('💰 Selected currency for reps:', currency.toUpperCase());
 
     return salesReps.slice(0, 10).map(rep => {
       // FIXED: Extract revenue for selected currency specifically
@@ -369,9 +387,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     if (!Array.isArray(activities)) {
       return [];
     }
-    
-    console.log('🔔 Activities Data:', activities);
-    
+
     return activities.slice(0, 15).map((activity, index) => ({
       id: activity.id || `activity_${index}`,
       action: activity.description || activity.action || 'Unknown activity',
@@ -380,7 +396,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     }));
   }, [analyticsData, getRelativeTime]);
 
-  // FIXED: Fetch analytics data with graceful error handling
+  // Fetch analytics data with graceful error handling
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -388,28 +404,16 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       
       const period = getPeriodParam(dateRange);
       
-      // FIXED: Don't send currency parameter as the API handles multi-currency properly
-      // The API keeps currencies separate and we'll filter on the frontend
-      const params = { 
-        period
-        // Removed currency parameter - let API return all currencies
-      };
-      
-      console.log('📡 FIXED API params:', params);
-      console.log('🔄 Attempting to fetch dashboard data...');
-      
+      // Do not send currency; fetch all and convert client-side
+      const params = { period };
       const data = await dashboardService.getAllDashboardData(params);
       
-      console.log('🔥 FIXED Raw Analytics Data:', data);
-      console.log('💰 Revenue data structure:', data.revenue);
-      
-      // Validate that we have some data
       if (!data || typeof data !== 'object') {
         throw new Error('Invalid data received from API');
       }
       
       setAnalyticsData(data);
-      console.log('✅ Dashboard data loaded successfully');
+      setRatesUpdatedAt(new Date().toISOString());
       
     } catch(err) {
       console.error('❌ Dashboard fetch error:', err);
@@ -458,6 +462,11 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     productPerformance, 
     salesRepPerformance, 
     recentActivities,
+
+    // Live rates for revenue breakdown
+    liveRates,
+    refreshRates,
+    formatCurrency,
     
     // Actions
     refresh,

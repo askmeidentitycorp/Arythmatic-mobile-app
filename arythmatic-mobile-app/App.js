@@ -483,11 +483,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
+    zIndex: 2000,
   },
   profileModal: {
     marginTop: 80, // Height of header
     marginRight: 12,
     marginLeft: 'auto',
+    maxWidth: 260,
   },
   profileModalContent: {
     backgroundColor: colors.panel,

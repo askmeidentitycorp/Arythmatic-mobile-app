@@ -94,7 +94,7 @@ const DashboardFilters = ({
         disabled={loading}
       >
         <Text style={styles.refreshText}>
-          {loading ? '...' : '⟳ Refresh'}
+          {loading ? '...' : 'Refresh'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -104,6 +104,7 @@ const DashboardFilters = ({
 const styles = StyleSheet.create({
   filterRow: {
     flexDirection: "row",
+    flexWrap: 'wrap',
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -112,8 +113,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterBox: { 
-    flex: 1, 
+    flexGrow: 1,
+    flexBasis: '48%',
     marginRight: 10,
+    marginBottom: 8,
     zIndex: 1000,
   },
   pickerContainer: {
@@ -148,9 +151,9 @@ const styles = StyleSheet.create({
   dropdownOverlay: {
     position: 'absolute',
     top: 0,
-    left: -1000,
-    right: -1000,
-    bottom: -1000,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 999,
   },
   dropdown: {
@@ -200,6 +203,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10, 
     paddingHorizontal: 12, 
     borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
   refreshBtnDisabled: {
     backgroundColor: colors.subtext,

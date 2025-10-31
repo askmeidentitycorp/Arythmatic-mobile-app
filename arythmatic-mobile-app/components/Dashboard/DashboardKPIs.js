@@ -5,11 +5,10 @@ import { colors } from '../../constants/config';
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const KPICard = React.memo(({ label, value, color, icon, isLoading }) => (
+const KPICard = React.memo(({ label, value, color, isLoading }) => (
   <View style={styles.kpiCard}>
     <View style={styles.kpiHeader}>
       <Text style={styles.kpiLabel}>{label}</Text>
-      {icon && <Text style={styles.kpiIcon}>{icon}</Text>}
     </View>
     <Text style={[styles.kpiValue, { color }]}>
       {isLoading ? '...' : value}
@@ -26,7 +25,6 @@ const DashboardKPIs = ({ kpis, loading }) => {
           label={item.label}
           value={item.value}
           color={item.color}
-          icon={item.icon}
           isLoading={loading}
         />
       ))}
@@ -45,7 +43,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     borderRadius: 12,
     padding: 16,
-    width: screenWidth > 600 ? "23%" : "48%",
+    width: screenWidth > 600 ? "23%" : "49%",
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -65,9 +63,6 @@ const styles = StyleSheet.create({
     color: colors.subtext,
     fontSize: 12,
     fontWeight: "600"
-  },
-  kpiIcon: {
-    fontSize: 16,
   },
   kpiValue: {
     fontSize: 22,

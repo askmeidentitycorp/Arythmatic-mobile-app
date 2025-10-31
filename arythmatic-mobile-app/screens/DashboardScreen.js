@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -19,15 +18,21 @@ import DashboardFilters from '../components/Dashboard/DashboardFilters';
 import DashboardKPIs from '../components/Dashboard/DashboardKPIs';
 import DashboardPanel from '../components/Dashboard/DashboardPanel';
 import RepCard from '../components/Dashboard/RepCard';
+import RevenueCard from '../components/Dashboard/RevenueCard';
 import { useDashboard } from '../hooks/useDashboard';
 
 export default function DashboardScreen() {
   // Filter states
   const [currency, setCurrency] = useState("USD");
   const [currencyItems] = useState([
-    { label: "INR (₹)", value: "INR", key: "currency_inr" },
     { label: "USD ($)", value: "USD", key: "currency_usd" },
     { label: "EUR (€)", value: "EUR", key: "currency_eur" },
+    { label: "GBP (£)", value: "GBP", key: "currency_gbp" },
+    { label: "INR (₹)", value: "INR", key: "currency_inr" },
+    { label: "JPY (¥)", value: "JPY", key: "currency_jpy" },
+    { label: "CNY (¥)", value: "CNY", key: "currency_cny" },
+    { label: "CAD (C$)", value: "CAD", key: "currency_cad" },
+    { label: "AUD (A$)", value: "AUD", key: "currency_aud" },
   ]);
 
   const [dateRange, setDateRange] = useState("This Month");
@@ -51,22 +56,20 @@ export default function DashboardScreen() {
     salesRepPerformance,
     recentActivities,
     refresh,
+    liveRates,
+    refreshRates,
+    formatCurrency,
   } = useDashboard(currency, dateRange);
 
   // Handle refresh with loading state
   const handleRefresh = useCallback(() => {
     refresh();
-    Alert.alert("Dashboard Refreshed", "Your analytics data has been updated!");
   }, [refresh]);
 
   // Removed toggle functions for cleaner mobile interface
 
   // Removed dropdown conflict handlers - using simple modals now
 
-  // Update data when currency or date range changes
-  useEffect(() => {
-    console.log('Analytics filters changed:', { currency, dateRange });
-  }, [currency, dateRange]);
 
   // Error state - Show error but continue with available data
   const showError = error && (!analyticsData || !kpis || kpis.length === 0);
@@ -114,11 +117,13 @@ export default function DashboardScreen() {
           loading={loading}
         />
 
+        {/* Revenue (Converted) */}
+        <RevenueCard liveRates={liveRates} formatCurrency={formatCurrency} onRefreshRates={refreshRates} />
+
         {/* Content */}
         {/* Error Banner - Show if there's an error but we have data */}
         {error && analyticsData && (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerIcon}>!</Text>
             <View style={styles.errorBannerContent}>
               <Text style={styles.errorBannerTitle}>Data Loading Issue</Text>
               <Text style={styles.errorBannerText}>
@@ -130,8 +135,8 @@ export default function DashboardScreen() {
           </View>
         )}
         
-        {/* KPIs */}
-        <DashboardKPIs kpis={kpis} loading={loading} />
+        {/* KPIs (excluding revenue which is shown above) */}
+        <DashboardKPIs kpis={kpis.slice(1)} loading={loading} />
 
         {/* Revenue Performance Chart */}
        <DashboardChart 
@@ -251,10 +256,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderLeftWidth: 4,
     borderLeftColor: colors.warn || '#F0B429',
-  },
-  errorBannerIcon: {
-    fontSize: 20,
-    marginRight: 12,
   },
   errorBannerContent: {
     flex: 1,
