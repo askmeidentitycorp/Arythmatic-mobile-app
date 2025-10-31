@@ -399,8 +399,10 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   // Fetch analytics data with graceful error handling
   const fetchDashboardData = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
+      if (!analyticsData) {
+        setLoading(true); // Only show loading on initial fetch
+      }
       
       const period = getPeriodParam(dateRange);
       
@@ -414,6 +416,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       
       setAnalyticsData(data);
       setRatesUpdatedAt(new Date().toISOString());
+      setLoading(false); // Set loading false immediately after data is set
       
     } catch(err) {
       console.error('❌ Dashboard fetch error:', err);

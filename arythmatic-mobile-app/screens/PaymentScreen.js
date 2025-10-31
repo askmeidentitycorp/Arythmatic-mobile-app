@@ -80,7 +80,7 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
       <View style={styles.paymentHeader}>
         <View style={styles.paymentHeaderLeft}>
           <View style={styles.paymentCircle}>
-            <Text style={styles.paymentCircleIcon}>💰</Text>
+            <Text style={styles.paymentCircleIcon}>$</Text>
           </View>
           <View style={styles.paymentMainInfo}>
             <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
@@ -94,7 +94,7 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
             onNext && onNext(payment);
           }}
         >
-          <Text style={styles.moreButtonText}>+</Text>
+          <Text style={styles.moreButtonText}>⋮</Text>
         </TouchableOpacity>
       </View>
       
@@ -127,8 +127,8 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
             <View style={styles.paymentCustomerDetails}>
               <Text style={styles.paymentCustomerName}>{payment.customerName || 'Unknown Customer'}</Text>
               <View style={styles.paymentCustomerMeta}>
-                <Text style={styles.paymentCustomerMetaText}>📧 {payment.customer_email || 'a.buh@yahoo.com'}</Text>
-                <Text style={styles.paymentCustomerMetaText}>📱 {payment.customer_phone || '+1904735684'}</Text>
+                <Text style={styles.paymentCustomerMetaText}>Email: {payment.customer_email || 'N/A'}</Text>
+                <Text style={styles.paymentCustomerMetaText}>Phone: {payment.customer_phone || 'N/A'}</Text>
               </View>
             </View>
           </View>
@@ -190,18 +190,15 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       
       // Transform API response - Map actual API field names
       const transformedPayments = (response.results || []).map(payment => {
-        // FIXED: API doesn't return customer details in payment endpoint
-        // We only have created_by (UUID), so we show "Customer" as placeholder
-        // To get actual customer names, we'd need to:
-        // 1. Fetch invoice details using payment.invoice UUID
-        // 2. Get customer info from the invoice
-        // 3. Or fetch from /users endpoint using payment.created_by
-        
-        const customerId = payment.customer?.id || payment.customer_id || payment.created_by || null;
+        // Try to extract customer info from various sources
+        const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
         const customerName = payment.customer_name || 
                            payment.customer?.name || 
-                           payment.customer?.display_name || 
-                           (customerId ? '' : 'Customer'); // leave empty to resolve asynchronously when id exists
+                           payment.customer?.display_name ||
+                           payment.customer?.displayName || 
+                           payment.customer_details?.displayName ||
+                           payment.customer_details?.name || 
+                           ''; // leave empty to resolve asynchronously
         
         return {
           ...payment,
@@ -612,7 +609,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               style={styles.exportButton} 
               onPress={handleExport}
             >
-              <Text style={styles.exportButtonText}>📤 Export</Text>
+              <Text style={styles.exportButtonText}>Export</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.addButton} 
@@ -1063,11 +1060,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   kpiItem: {
     alignItems: "flex-start",
-    minWidth: "22%",
+    minWidth: "20%",
+    flex: 1,
   },
   kpis: {
     marginTop: 6,
@@ -1120,9 +1118,10 @@ const styles = StyleSheet.create({
   paymentCard: {
     backgroundColor: colors.panel,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
+    marginHorizontal: 2,
   },
   paymentHeader: {
     flexDirection: "row",
@@ -1145,7 +1144,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   paymentCircleIcon: {
-    fontSize: 20,
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: '700',
   },
   paymentMainInfo: {
     flex: 1,
@@ -1184,9 +1185,9 @@ const styles = StyleSheet.create({
   },
   moreButtonText: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "300",
-    lineHeight: 24,
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 20,
   },
   paymentInfo: {
     gap: 12,
