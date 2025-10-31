@@ -27,26 +27,17 @@ export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) =
         ...params,
       };
 
-      console.log('🔍 Fetching sales reps with params:', requestParams);
-
       const response = await salesRepService.getAll(requestParams);
-      
-      console.log('📥 Sales Reps API Response:', response);
 
       let data = response;
-      
       if (response && typeof response === 'object' && 'data' in response) {
         data = response.data;
       }
-
-      console.log('📦 Processed data:', data);
 
       const results = data?.results || data || [];
       const count = data?.count || results.length;
       const next = data?.next || null;
       const previous = data?.previous || null;
-      
-      console.log('📊 Extracted:', { results: results.length, count, hasNext: !!next });
 
       const transformedReps = results.map((rep) => ({
         id: rep.id,
@@ -84,10 +75,8 @@ export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) =
         hasPrevious: !!previous,
       });
 
-      console.log('✅ Successfully loaded', transformedReps.length, 'sales reps');
 
     } catch (err) {
-      console.error('❌ Error fetching sales reps:', err);
       setError(err.message || 'Failed to load sales reps');
       setSalesReps([]);
       
@@ -141,56 +130,25 @@ export const useSalesRepMetrics = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Fetching sales rep metrics...');
+      // Get total count quickly (no filters needed)
+      const totalRes = await salesRepService.getAll({ page: 1, page_size: 1 });
+      const total = (totalRes?.count != null) ? totalRes.count : (totalRes?.results?.length || 0);
 
-      // Get first page with same page size as web (10)
-      const response = await salesRepService.getAll({
-        page: 1,
-        page_size: 10,
-      });
+      // Get active/inactive counts using filtered queries (page_size=1 to read count only)
+      const [activeRes, inactiveRes] = await Promise.all([
+        salesRepService.getAll({ page: 1, page_size: 1, is_active: true }),
+        salesRepService.getAll({ page: 1, page_size: 1, is_active: false }),
+      ]);
 
-      console.log('📊 Metrics API Response:', response);
-
-      let data = response;
-      
-      if (response && typeof response === 'object' && 'data' in response) {
-        data = response.data;
-      }
-
-      console.log('📦 Metrics processed data:', data);
-
-      const reps = data?.results || [];
-      const total = data?.count || 0;
-      
-      console.log('📋 First page reps:', reps.length);
-      console.log('🔍 Detailed rep data:', reps.map(r => ({
-        name: r.name,
-        is_active: r.is_active,
-        status: r.status
-      })));
-
-      // Count based on ACTUAL is_active value from API
-      const active = reps.filter(rep => rep.is_active === true).length;
-      const inactive = reps.filter(rep => rep.is_active === false).length;
+      const active = activeRes?.count != null ? activeRes.count : 0;
+      const inactive = inactiveRes?.count != null ? inactiveRes.count : 0;
 
       setTotalCount(total);
       setActiveCount(active);
       setInactiveCount(inactive);
 
-      console.log('✅ Calculated Metrics:', { 
-        total, 
-        activeOnPage: active, 
-        inactiveOnPage: inactive,
-        pageSize: reps.length
-      });
-
-      console.log('⚠️ NOTE: If this shows 10 active but web shows different,');
-      console.log('⚠️ the web may be filtering or the data changed.');
-
     } catch (err) {
-      console.error('❌ Error fetching sales rep metrics:', err);
       setError(err.message || 'Failed to fetch metrics');
-      
       setTotalCount(0);
       setActiveCount(0);
       setInactiveCount(0);
@@ -198,12 +156,6 @@ export const useSalesRepMetrics = () => {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchMetrics();
-  }, [fetchMetrics]);
-
-  const refresh = useCallback(() => {
     fetchMetrics();
   }, [fetchMetrics]);
 
@@ -230,17 +182,13 @@ export const useSalesRep = (id) => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Fetching sales rep with ID:', id);
 
       const response = await salesRepService.getById(id);
       
       const data = response?.data || response;
       setSalesRep(data);
 
-      console.log('✅ Loaded sales rep:', data?.name);
-
     } catch (err) {
-      console.error('❌ Error fetching sales rep:', err);
       setError(err.message || 'Failed to load sales rep');
     } finally {
       setLoading(false);
@@ -267,13 +215,10 @@ export const useSalesRepMutations = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('📤 Creating sales rep:', data);
 
       const response = await salesRepService.create(data);
-      console.log('✅ Sales rep created:', response);
       return response;
     } catch (err) {
-      console.error('❌ Error creating sales rep:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -285,16 +230,13 @@ export const useSalesRepMutations = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('📤 Updating sales rep:', id, data);
 
       const response = partial
         ? await salesRepService.updatePartial(id, data)
         : await salesRepService.update(id, data);
       
-      console.log('✅ Sales rep updated:', response);
       return response;
     } catch (err) {
-      console.error('❌ Error updating sales rep:', err);
       setError(err.message);
       throw err;
     } finally {

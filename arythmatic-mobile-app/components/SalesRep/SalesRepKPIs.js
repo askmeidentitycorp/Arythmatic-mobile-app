@@ -10,36 +10,40 @@ const KPI = ({ label, value, color = colors.primary }) => (
   </View>
 );
 
-const SalesRepKPIs = ({ loading: parentLoading }) => {
-  const { 
-    totalCount, 
-    activeCount, 
-    inactiveCount, 
-    loading: metricsLoading 
-  } = useSalesRepMetrics();
+const SalesRepKPIs = ({ loading: parentLoading, totalCount: tcProp, activeCount: acProp, inactiveCount: icProp }) => {
+  // If counts are provided, use them; otherwise fetch via hook
+  const useHook = tcProp === undefined || acProp === undefined || icProp === undefined;
+  const hook = useHook ? useSalesRepMetrics() : {};
+
+  const totalCount = useHook ? hook.totalCount : tcProp;
+  const activeCount = useHook ? hook.activeCount : acProp;
+  const inactiveCount = useHook ? hook.inactiveCount : icProp;
+  const metricsLoading = useHook ? hook.loading : false;
 
   const isLoading = parentLoading || metricsLoading;
+
+  const perf = !isLoading && totalCount > 0 ? `${Math.round((activeCount/totalCount)*100)}%` : (isLoading ? '...' : '0%');
 
   return (
     <View style={styles.kpis}>
       <KPI 
         label="Total Reps" 
-        value={isLoading ? "..." : totalCount.toString()} 
+        value={isLoading ? "..." : String(totalCount || 0)} 
         color={colors.primary} 
       />
       <KPI 
         label="Active Reps" 
-        value={isLoading ? "..." : activeCount.toString()} 
+        value={isLoading ? "..." : String(activeCount || 0)} 
         color="#31C76A" 
       />
       <KPI 
         label="Inactive Reps" 
-        value={isLoading ? "..." : inactiveCount.toString()} 
+        value={isLoading ? "..." : String(inactiveCount || 0)} 
         color="#F16364" 
       />
       <KPI 
         label="Performance" 
-        value={isLoading ? "..." : activeCount > 0 ? `${Math.round((activeCount/totalCount)*100)}%` : "0%"} 
+        value={perf} 
         color="#F4B740" 
       />
     </View>

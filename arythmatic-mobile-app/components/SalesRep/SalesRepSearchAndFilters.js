@@ -15,25 +15,25 @@ const SalesRepSearchAndFilters = ({
 
   return (
     <View style={styles.container}>
+      {/* Quick Search */}
+      <TextInput
+        placeholder="Search by name, email, ID"
+        placeholderTextColor="#9aa6bf"
+        value={searchQuery}
+        onChangeText={onSearchChange}
+        style={styles.searchInput}
+      />
+
       {/* Filters Toggle */}
       <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
         <Text style={styles.filterToggle}>
-          {showFilters ? "Hide Filters ▴" : "Advanced Filters ▾"}
+          {showFilters ? "Hide Filters" : "Advanced Filters"}
         </Text>
       </TouchableOpacity>
 
       {/* Filters Panel */}
       {showFilters && (
         <View style={styles.filtersPanel}>
-          {/* Search */}
-          <TextInput
-            placeholder="Search by name, email, ID"
-            placeholderTextColor="#9aa6bf"
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            style={styles.searchInput}
-          />
-
           {/* Status filter */}
           <DarkPicker
             selectedValue={filters.status}
@@ -54,8 +54,22 @@ const SalesRepSearchAndFilters = ({
               { label: "All Roles", value: "" },
               { label: "Sales Agent", value: "sales_agent" },
               { label: "Admin", value: "admin" },
+              { label: "Sales Manager", value: "sales_manager" },
             ]}
             placeholder="All Roles"
+          />
+
+          {/* Sort */}
+          <DarkPicker
+            selectedValue={filters.sort}
+            onValueChange={(v) => onFiltersChange({ ...filters, sort: v })}
+            items={[
+              { label: "Sort: Name (A-Z)", value: "name_asc" },
+              { label: "Sort: Name (Z-A)", value: "name_desc" },
+              { label: "Sort: Created (Newest)", value: "created_desc" },
+              { label: "Sort: Created (Oldest)", value: "created_asc" },
+            ]}
+            placeholder="Sort"
           />
 
           <TouchableOpacity style={styles.clearButton} onPress={onClearFilters}>

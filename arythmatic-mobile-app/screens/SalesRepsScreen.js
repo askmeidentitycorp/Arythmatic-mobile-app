@@ -30,6 +30,7 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
   const [filters, setFilters] = useState({
     status: '',
     role: '',
+    sort: 'name_asc',
   });
 
   const [searchParams, setSearchParams] = useState({});
@@ -54,6 +55,17 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
       
       if (filters.role) {
         params.role = filters.role;
+      }
+
+      // Sort mapping to API ordering
+      const sortMap = {
+        name_asc: 'name',
+        name_desc: '-name',
+        created_desc: '-created_at',
+        created_asc: 'created_at',
+      };
+      if (filters.sort && sortMap[filters.sort]) {
+        params.ordering = sortMap[filters.sort];
       }
 
       setSearchParams(params);
@@ -165,6 +177,7 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
     setFilters({
       status: '',
       role: '',
+      sort: 'name_asc',
     });
   };
 
@@ -269,6 +282,45 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
     }
   };
   
+  // Export CSV
+  const handleExportCSV = async () => {
+    try {
+      // Fetch all pages using current searchParams
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await salesRepService.getAll({ ...searchParams, page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+      const headers = ['id','name','email','phone','employee_id','role','status','is_active'];
+      const csv = [headers.join(',')].concat(
+        rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
+      ).join('\n');
+
+      // Download on web; share as text on native
+      const { Platform, Share } = await import('react-native');
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'sales_reps.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        await Share.share({ title: 'Sales Reps CSV', message: csv });
+      }
+    } catch (e) {
+      Alert.alert('Export Failed', e.message || 'Could not export CSV');
+    }
+  };
+
   // Handle Add Sales Rep
   const handleAddSalesRep = () => {
     setSelectedSalesRep(null);
@@ -331,7 +383,7 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
     <View style={styles.container}>
       <ScrollView>
         {/* Header */}
-        <SalesRepHeader onAddPress={handleAddSalesRep} />
+        <SalesRepHeader onAddPress={handleAddSalesRep} onExport={handleExportCSV} totalCount={totalCount} />
 
         {/* KPIs */}
         <SalesRepKPIs
