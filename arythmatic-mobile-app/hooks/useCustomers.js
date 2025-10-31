@@ -17,8 +17,6 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
   });
 
   const fetchCustomers = useCallback(async (page = 1) => {
-    console.log('🚀 SIMPLE fetchCustomers called with page:', page);
-
     try {
       setLoading(true);
       setError(null);
@@ -28,23 +26,10 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
         page_size: pageSize,
         ...params,
       };
-      
-      // DEBUG: Log all request details
-      console.log('🐛 DEBUG useCustomers:', {
-        hook: 'useCustomers',
-        useNested,
-        endpoint: useNested ? 'customers-nested' : 'customers',
-        requestParams,
-        paramsStringified: JSON.stringify(params)
-      });
-
-      console.log('🔍 Fetching customers with params:', requestParams);
 
       const response = useNested
         ? await customerService.getAllNested(requestParams)
         : await customerService.getAll(requestParams);
-
-      console.log('📥 Customer API Response:', response);
 
       let data = response;
       if (response && typeof response === 'object' && 'data' in response) {
@@ -56,16 +41,6 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
       
       // Calculate total pages based on API count
       const totalPages = Math.ceil(count / pageSize) || 0;
-
-      console.log('📊 SIMPLE Processing response:', {
-        resultsLength: results.length,
-        count,
-        requestedPage: page,
-        totalPages,
-        firstCustomerId: results[0]?.id,
-        lastCustomerId: results[results.length - 1]?.id,
-        customerNames: results.slice(0, 3).map(c => c.displayName)
-      });
 
       const newPagination = {
         currentPage: page,
@@ -79,13 +54,8 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
       setCustomers(results);
       setPagination(newPagination);
 
-      console.log('✅ SIMPLE State updated successfully:', {
-        customersCount: results.length,
-        pagination: newPagination
-      });
 
     } catch (err) {
-      console.error('❌ SIMPLE Error fetching customers:', err);
       setError(err.message || 'Failed to load customers');
       setCustomers([]);
       setPagination(prev => ({ 
@@ -100,28 +70,16 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
 
   // Initial load
   useEffect(() => {
-    console.log('🔄 SIMPLE Initial useEffect triggered');
     fetchCustomers(1);
   }, [fetchCustomers]);
 
   const refresh = useCallback(() => {
-    console.log('🔄 SIMPLE Refresh triggered - current page:', pagination.currentPage);
     fetchCustomers(pagination.currentPage);
   }, [fetchCustomers, pagination.currentPage]);
 
   const goToPage = useCallback((page) => {
-    console.log('🎯 SIMPLE goToPage called:', {
-      requestedPage: page,
-      currentPage: pagination.currentPage,
-      totalPages: pagination.totalPages,
-      loading
-    });
-
     if (page >= 1 && page <= pagination.totalPages && !loading && page !== pagination.currentPage) {
-      console.log('✅ SIMPLE Page navigation approved, fetching page:', page);
       fetchCustomers(page);
-    } else {
-      console.log('⚠️ SIMPLE Page navigation blocked');
     }
   }, [fetchCustomers, pagination.totalPages, pagination.currentPage, loading]);
 
@@ -170,6 +128,48 @@ export const useCustomer = (id, useNested = true) => {
   }, [fetchCustomer]);
 
   return { customer, loading, error, refresh };
+};
+
+export const useCustomerMetrics = () => {
+  const [totalCount, setTotalCount] = useState(0);
+  const [individualCount, setIndividualCount] = useState(0);
+  const [businessCount, setBusinessCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Use minimal page_size to get counts from API
+      const [totalRes, indivRes, bizRes, activeRes] = await Promise.all([
+        customerService.getAll({ page: 1, page_size: 1 }),
+        customerService.getAll({ page: 1, page_size: 1, type: 'Individual' }),
+        customerService.getAll({ page: 1, page_size: 1, type: 'Business' }),
+        customerService.getAll({ page: 1, page_size: 1, is_deleted: false }),
+      ]);
+
+      setTotalCount(totalRes?.count || 0);
+      setIndividualCount(indivRes?.count || 0);
+      setBusinessCount(bizRes?.count || 0);
+      setActiveCount(activeRes?.count || 0);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch customer metrics');
+      setTotalCount(0);
+      setIndividualCount(0);
+      setBusinessCount(0);
+      setActiveCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+
+  const refresh = useCallback(() => fetchMetrics(), [fetchMetrics]);
+
+  return { totalCount, individualCount, businessCount, activeCount, loading, error, refresh };
 };
 
 export const useCustomerMutations = () => {

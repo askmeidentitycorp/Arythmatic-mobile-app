@@ -86,11 +86,11 @@ const CustomerCard = ({ customer, onActionPress }) => {
       </View>
 
       {/* Basic Info */}
-      <Text style={styles.infoText}>📧 {email}</Text>
-      <Text style={styles.infoText}>📞 {phone}</Text>
-      <Text style={styles.infoText}>🌍 {customer.countryCode || "—"}</Text>
+      <Text style={styles.infoText}>Email: {email}</Text>
+      <Text style={styles.infoText}>Phone: {phone}</Text>
+      <Text style={styles.infoText}>Country: {customer.countryCode || "—"}</Text>
       <Text style={styles.infoText}>
-        📅 {new Date(customer.created_at || Date.now()).toLocaleDateString()}
+        Created: {new Date(customer.created_at || Date.now()).toLocaleDateString()}
       </Text>
 
       {/* Expanded Content */}
@@ -144,8 +144,9 @@ const CustomerCard = ({ customer, onActionPress }) => {
           {[
             "View Details",
             "Edit Customer", 
-            "View Orders",
             "View Interactions",
+            "View Invoices",
+            "Audit History",
             status === "Active" ? "Deactivate" : "Activate",
             "Delete"
           ].map((action) => (

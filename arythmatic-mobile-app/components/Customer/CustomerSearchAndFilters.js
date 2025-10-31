@@ -27,7 +27,7 @@ const CustomerSearchAndFilters = ({
       {/* Filters Toggle */}
       <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
         <Text style={styles.filterToggle}>
-          {showFilters ? "Hide Filters ▴" : "Advanced Filters ▾"}
+          {showFilters ? "Hide Filters" : "Advanced Filters"}
         </Text>
       </TouchableOpacity>
 

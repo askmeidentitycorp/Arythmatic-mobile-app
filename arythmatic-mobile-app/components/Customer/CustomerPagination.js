@@ -20,55 +20,21 @@ const CustomerPagination = ({
 
   const handlePrevious = () => {
     const targetPage = currentPage - 1;
-    console.log('Previous button clicked:', {
-      currentPage,
-      targetPage,
-      hasPrevious,
-      loading,
-      canNavigate: hasPrevious && currentPage > 1 && !loading
-    });
-    
     if (hasPrevious && currentPage > 1 && !loading) {
-      console.log('Calling onPageChange for previous page:', targetPage);
       onPageChange(targetPage);
-    } else {
-      console.log('Previous navigation blocked');
     }
   };
 
   const handleNext = () => {
     const targetPage = currentPage + 1;
-    console.log('Next button clicked:', {
-      currentPage,
-      targetPage,
-      totalPages,
-      hasNext,
-      loading,
-      canNavigate: hasNext && currentPage < totalPages && !loading
-    });
-    
     if (hasNext && currentPage < totalPages && !loading) {
-      console.log('Calling onPageChange for next page:', targetPage);
       onPageChange(targetPage);
-    } else {
-      console.log('Next navigation blocked');
     }
   };
 
   // Calculate proper display values
   const startItem = ((currentPage - 1) * pageSize) + 1;
   const endItem = Math.min(currentPage * pageSize, totalCount);
-  
-  console.log('Rendering pagination:', {
-    currentPage,
-    totalPages,
-    hasNext,
-    hasPrevious,
-    loading,
-    startItem,
-    endItem,
-    totalCount
-  });
   
   return (
     <View style={styles.paginationContainer}>

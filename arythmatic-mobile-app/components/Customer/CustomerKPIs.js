@@ -11,7 +11,7 @@ const KPI = ({ label, value, color = "#9695D7" }) => (
   </View>
 );
 
-const CustomerKPIs = ({ customers = [], totalCount = 0 }) => {
+const CustomerKPIs = ({ customers = [], totalCount = 0, individualCount, businessCount, activeCount }) => {
   const metrics = React.useMemo(() => {
     // FIXED: Add safety check for undefined customers
     if (!customers || !Array.isArray(customers)) {
@@ -28,12 +28,11 @@ const CustomerKPIs = ({ customers = [], totalCount = 0 }) => {
     console.log('Sample customer data:', customers[0]);
 
     // Count by type (Individual/Business)
-    const individual = customers.filter((c) => c?.type === "Individual").length;
-    const business = customers.filter((c) => c?.type === "Business").length;
+    const individual = individualCount ?? customers.filter((c) => c?.type === "Individual").length;
+    const business = businessCount ?? customers.filter((c) => c?.type === "Business").length;
 
-    // FIXED: Count active based on is_deleted field (NOT status field)
-    // Web app: customer.is_deleted ? 'deleted' : 'active'
-    const active = customers.filter((c) => c?.is_deleted === false || !c?.is_deleted).length;
+    // Active based on is_deleted field
+    const active = activeCount ?? customers.filter((c) => c?.is_deleted === false || !c?.is_deleted).length;
     const deleted = customers.filter((c) => c?.is_deleted === true).length;
 
     console.log('Calculated metrics:', {

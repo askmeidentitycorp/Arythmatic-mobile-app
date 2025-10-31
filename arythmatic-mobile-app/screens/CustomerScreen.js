@@ -18,7 +18,7 @@ import CustomerPagination from '../components/Customer/CustomerPagination';
 import CustomerSearchAndFilters from '../components/Customer/CustomerSearchAndFilters';
 import CrudModal from '../components/CrudModal';
 import { colors } from '../constants/config';
-import { useCustomerMutations, useCustomers } from '../hooks/useCustomers';
+import { useCustomerMutations, useCustomers, useCustomerMetrics } from '../hooks/useCustomers';
 
 export default function CustomerScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +44,7 @@ export default function CustomerScreen({ navigation }) {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filters]);
 
-  // SIMPLE: Regular API pagination (20 per page from API)
+  // Simple pagination
   const {
     customers,
     loading,
@@ -53,7 +53,10 @@ export default function CustomerScreen({ navigation }) {
     refresh,
     goToPage,
     hasMore
-  } = useCustomers(searchParams, 10, true); // Keep nested=true for customer relationships
+  } = useCustomers(searchParams, 10, true);
+
+  // Global metrics aligned with web
+  const { totalCount: totals, individualCount, businessCount, activeCount, loading: metricsLoading } = useCustomerMetrics();
 
   const {
     createCustomer,
@@ -219,6 +222,43 @@ export default function CustomerScreen({ navigation }) {
     }
   };
 
+  // Export CSV
+  const handleExportCSV = async () => {
+    try {
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await customerService.getAll({ ...searchParams, page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+      const headers = ['id','display_name','type','email','phone','country_code','is_deleted'];
+      const csv = [headers.join(',')].concat(
+        rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
+      ).join('\n');
+
+      const { Platform, Share } = await import('react-native');
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'customers.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        await Share.share({ title: 'Customers CSV', message: csv });
+      }
+    } catch (e) {
+      Alert.alert('Export Failed', e.message || 'Could not export CSV');
+    }
+  };
+
   const handleAddCustomer = () => {
     setSelectedCustomer(null);
     setModalMode('create');
@@ -288,7 +328,7 @@ export default function CustomerScreen({ navigation }) {
             <Text style={styles.backButtonText}>‹ Back</Text>
           </TouchableOpacity>
         </View>
-        <CustomerHeader onAddCustomer={handleAddCustomer} />
+        <CustomerHeader onAddPress={handleAddCustomer} onExport={handleExportCSV} totalCount={totals} />
         
         {/* SIMPLE PAGINATION INFO */}
         {pagination.totalCount > 0 && (
@@ -307,7 +347,10 @@ export default function CustomerScreen({ navigation }) {
         
         <CustomerKPIs 
           customers={customers} 
-          totalCount={pagination.totalCount} 
+          totalCount={totals}
+          individualCount={individualCount}
+          businessCount={businessCount}
+          activeCount={activeCount}
         />
         
         <CustomerSearchAndFilters

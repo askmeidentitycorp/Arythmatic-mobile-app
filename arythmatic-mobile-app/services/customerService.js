@@ -6,9 +6,7 @@ export const customerService = {
   // Simple CRUD operations
   getAll: async (params = {}) => {
     try {
-      console.log('📞 API Call: GET /customers/ with params:', params);
-      const response = await apiClient.get('/customers/', params); // FIXED: Direct params
-      console.log('📥 Raw Response:', response);
+      const response = await apiClient.get('/customers/', params); // Direct params
       return response.data || response;
     } catch (error) {
       console.error('❌ API Error in getAll:', error);
@@ -69,12 +67,8 @@ export const customerService = {
   // FINALLY FIXED: Nested operations - PASS PARAMS DIRECTLY
   getAllNested: async (params = {}) => {
     try {
-      console.log('📞 API Call: GET /customers-nested/ with params:', params);
-      
-      // FIXED: Pass params DIRECTLY, not wrapped in { params }
+      // Pass params directly
       const response = await apiClient.get('/customers-nested/', params);
-      
-      console.log('📥 Raw Response for nested:', response);
       return response.data || response;
     } catch (error) {
       console.error('❌ API Error in getAllNested:', error);
