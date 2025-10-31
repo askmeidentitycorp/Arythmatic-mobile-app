@@ -156,6 +156,12 @@ export const useSalesRepMetrics = () => {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
+
+  const refresh = useCallback(() => {
     fetchMetrics();
   }, [fetchMetrics]);
 
