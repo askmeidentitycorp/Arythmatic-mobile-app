@@ -161,6 +161,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   const fetchingIdsRef = React.useRef(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [kpiCounts, setKpiCounts] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState({ 
     searchText: "", 
@@ -259,12 +260,38 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     }
   }, []);
 
+  // Fetch KPI counts separately for accuracy
+  const fetchKPICounts = useCallback(async () => {
+    try {
+      console.log('🔵 Fetching payment KPI counts...');
+      const counts = await paymentService.getCounts();
+      console.log('🔵 KPI Counts received:', counts);
+      setKpiCounts(counts);
+    } catch (err) {
+      console.error('❌ Error fetching KPI counts:', err);
+      // Don't set error, just use fallback calculation
+    }
+  }, []);
+
   useEffect(() => {
     fetchPayments();
-  }, [fetchPayments]);
+    fetchKPICounts();
+  }, [fetchPayments, fetchKPICounts]);
 
-  /* ---------- KPI Metrics - Matching Dashboard Logic EXACTLY ---------- */
+  /* ---------- KPI Metrics - Use Server-Side Counts for Accuracy ---------- */
   const metrics = useMemo(() => {
+    // If we have server-side counts, use them for accuracy
+    if (kpiCounts) {
+      const symbol = '$'; // Default to USD for display
+      return {
+        total: kpiCounts.total || 0,
+        totalValue: `${symbol}${(kpiCounts.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        successful: `${symbol}${(kpiCounts.successful || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        failed: `${symbol}${((kpiCounts.failed || 0) + (kpiCounts.voided || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      };
+    }
+
+    // Fallback: Calculate from current page data
     const totalPayments = payments.length;
     
     // FIXED: Calculate totals for ALL currencies (like Dashboard)
@@ -320,7 +347,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       failed: `${symbol}${displayFailed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       currencyBreakdown,
     };
-  }, [payments]);
+  }, [payments, kpiCounts]);
 
   /* ---------- Filters ---------- */
   const filteredPayments = useMemo(() => {
