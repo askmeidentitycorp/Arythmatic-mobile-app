@@ -69,6 +69,10 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
     followUpDate: "",
     description: "",
   });
+
+  // Notes/Product management modals
+  const [notesModal, setNotesModal] = useState({ open: false, interaction: null, newNote: "" });
+  const [productsModal, setProductsModal] = useState({ open: false, interaction: null, items: [] });
   const [openActionsId, setOpenActionsId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [repFilter, setRepFilter] = useState(null);
@@ -183,7 +187,11 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         break;
 
       case "Manage Notes":
+        setNotesModal({ open: true, interaction, newNote: "" });
+        break;
       case "Manage Products":
+        setProductsModal({ open: true, interaction, items: interaction.products || [] });
+        break;
       case "Status History":
       case "Audit History":
         Alert.alert(action, 'Not implemented yet');
@@ -468,7 +476,120 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
   loading={loading}
 />
       </ScrollView>
-
+      
+      {/* Manage Notes Modal */}
+      <Modal visible={notesModal.open} transparent animationType="fade">
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Manage Notes</Text>
+                <TouchableOpacity onPress={() => setNotesModal({ open: false, interaction: null, newNote: "" })}>
+                  <Text style={styles.closeX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 14 }}>
+                {(notesModal.interaction?.notes || []).map((n, i) => (
+                  <Text key={i} style={[styles.detailText, { marginBottom: 8 }]}>
+                    • {n.note || n}
+                  </Text>
+                ))}
+                <LabeledInput
+                  label="Add a note"
+                  value={notesModal.newNote}
+                  onChangeText={(v) => setNotesModal((m) => ({ ...m, newNote: v }))}
+                  placeholder="Write a note..."
+                  multiline
+                />
+              </ScrollView>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity style={styles.btnGhost} onPress={() => setNotesModal({ open: false, interaction: null, newNote: "" })}>
+                  <Text style={styles.btnGhostText}>Close</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={async () => {
+                    try {
+                      const currNotes = notesModal.interaction?.notes || [];
+                      const updated = notesModal.newNote
+                        ? [...currNotes, { note: notesModal.newNote, created_at: new Date().toISOString() }]
+                        : currNotes;
+                      await updateInteraction(notesModal.interaction.id, { notes: updated }, false, true);
+                      setNotesModal({ open: false, interaction: null, newNote: "" });
+                      refresh();
+                    } catch (e) {
+                      Alert.alert('Error', 'Failed to save notes');
+                    }
+                  }}
+                >
+                  <Text style={styles.btnPrimaryText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      
+      {/* Manage Products Modal */}
+      <Modal visible={productsModal.open} transparent animationType="fade">
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Manage Products</Text>
+                <TouchableOpacity onPress={() => setProductsModal({ open: false, interaction: null, items: [] })}>
+                  <Text style={styles.closeX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 14 }}>
+                {(productsModal.items || []).map((p, i) => (
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={[styles.detailText, { flex: 1 }]}>• {p.name || p.label || p}</Text>
+                    <TouchableOpacity onPress={() => setProductsModal((m) => ({ ...m, items: m.items.filter((_, idx) => idx !== i) }))}>
+                      <Text style={{ color: '#ff6b6b', fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <LabeledInput
+                  label="Add product name"
+                  value={productsModal.pendingName || ''}
+                  onChangeText={(v) => setProductsModal((m) => ({ ...m, pendingName: v }))}
+                  placeholder="Product name / SKU"
+                />
+                <TouchableOpacity
+                  style={[styles.btnPrimary, { alignSelf: 'flex-start', marginTop: 8 }]}
+                  onPress={() => {
+                    if (!productsModal.pendingName?.trim()) return;
+                    setProductsModal((m) => ({ ...m, items: [...m.items, { name: m.pendingName.trim() }], pendingName: '' }));
+                  }}
+                >
+                  <Text style={styles.btnPrimaryText}>Add</Text>
+                </TouchableOpacity>
+              </ScrollView>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity style={styles.btnGhost} onPress={() => setProductsModal({ open: false, interaction: null, items: [] })}>
+                  <Text style={styles.btnGhostText}>Close</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={async () => {
+                    try {
+                      await updateInteraction(productsModal.interaction.id, { products: productsModal.items }, false, true);
+                      setProductsModal({ open: false, interaction: null, items: [] });
+                      refresh();
+                    } catch (e) {
+                      Alert.alert('Error', 'Failed to save products');
+                    }
+                  }}
+                >
+                  <Text style={styles.btnPrimaryText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      
       {/* Create Interaction Modal */}
       <Modal visible={showAdd} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
