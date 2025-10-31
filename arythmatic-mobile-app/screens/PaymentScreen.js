@@ -1,5 +1,5 @@
 // screens/PaymentScreen.js
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,8 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
-import { paymentService } from '../services/paymentService';
-import { customerService } from '../services/customerService';
+import { usePayments, usePaymentMetrics, usePaymentMutations } from '../hooks/usePayments';
 import DarkPicker from '../components/Customer/DarkPicker';
 
 // Enable LayoutAnimation on Android
@@ -156,12 +155,11 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
 
 /* ---------- Main Component ---------- */
 export default function PaymentScreen({ onNavigateToDetails, navigation }) {
-  const [payments, setPayments] = useState([]);
-  const [nameCache, setNameCache] = useState({});
-  const fetchingIdsRef = React.useRef(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [kpiCounts, setKpiCounts] = useState(null);
+  // Use custom hooks for data fetching
+  const { payments, loading, error, refresh: refreshPayments } = usePayments({}, 1000, true);
+  const { metrics: kpiCounts } = usePaymentMetrics();
+  const { processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
+  
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState({ 
     searchText: "", 
@@ -172,125 +170,6 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     maxAmount: ""
   });
 
-  // Fetch payments from API
-  const fetchPayments = useCallback(async () => {
-    console.log('\n🔵 ========== PAYMENT SCREEN: FETCHING DATA ==========');
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = {
-        page: 1,
-        page_size: 1000, // Get all payments for proper calculation
-      };
-      
-      console.log('🔵 Calling paymentService.getAllNested with params:', params);
-      const response = await paymentService.getAllNested(params);
-      console.log('🔵 Raw API Response sample (first payment):', JSON.stringify((response.results || [])[0], null, 2));
-      
-      // Transform API response - Map actual API field names
-      const transformedPayments = (response.results || []).map(payment => {
-        console.log('🔍 Processing payment:', {
-          id: payment.id,
-          customer: payment.customer,
-          customer_id: payment.customer_id,
-          customer_details: payment.customer_details,
-          invoice: payment.invoice
-        });
-        // Try to extract customer info from various sources
-        const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
-        // The customer name is in tags.displayName (camelCase) in the nested API response
-        let customerName = payment.tags?.displayName || 
-                           payment.tags?.display_name ||
-                           payment.customer_details?.tags?.displayName ||
-                           payment.customer_details?.tags?.display_name ||
-                           payment.customer_details?.displayName ||
-                           payment.customer_details?.display_name || 
-                           payment.customer_details?.name ||
-                           payment.customer?.displayName ||
-                           payment.customer?.display_name ||
-                           payment.customer?.name || 
-                           payment.customer_name || 
-                           '';
-        
-        console.log(`🔍 Payment ${payment.id}: customerId=${customerId}, customerName=${customerName || '(empty)'}, tags=`, payment.tags);
-        
-        // If no customer name found, leave empty to resolve asynchronously
-        
-        return {
-          ...payment,
-          transaction_id: payment.transaction_id || payment.id,
-          customerId,
-          customerName,
-          // Normalize status to Title Case
-          status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
-          // Map payment_method or paymentMethod
-          payment_method: payment.payment_method || payment.paymentMethod || 'N/A',
-          // Map invoice_number - use last 8 chars of UUID for display
-          invoice_number: payment.invoice_number || 
-                         (payment.invoice ? payment.invoice.slice(-8) : 'N/A'),
-          // Format amount with currency symbol
-          amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        };
-      });
-      
-      console.log('🔵 Transformed Payments Count:', transformedPayments.length);
-      if (transformedPayments.length > 0) {
-        console.log('🔵 First Payment Sample:', JSON.stringify(transformedPayments[0], null, 2));
-      }
-      console.log('🔵 ========== END PAYMENT FETCH ==========\n');
-      
-      setPayments(transformedPayments);
-
-      // Resolve customer names for items missing names
-      const idsToFetch = Array.from(new Set(
-        transformedPayments
-          .filter(p => (!p.customerName || p.customerName === '') && p.customerId)
-          .map(p => p.customerId)
-      ));
-
-      idsToFetch.forEach(async (cid) => {
-        if (!cid || nameCache[cid] || fetchingIdsRef.current.has(cid)) return;
-        fetchingIdsRef.current.add(cid);
-        try {
-          const data = await customerService.getById(cid);
-          const cust = data?.data || data;
-          const displayName = cust?.display_name || cust?.displayName || cust?.name || cust?.full_name || cust?.email || 'Customer';
-          setNameCache(prev => ({ ...prev, [cid]: displayName }));
-          setPayments(prev => prev.map(p => (p.customerId === cid && (!p.customerName || p.customerName === '')) ? { ...p, customerName: displayName } : p));
-        } catch (e) {
-          // leave placeholder
-        } finally {
-          fetchingIdsRef.current.delete(cid);
-        }
-      });
-    } catch (err) {
-      console.error('❌ PAYMENT FETCH ERROR:', err);
-      console.error('❌ Error Message:', err.message);
-      console.error('❌ Error Stack:', err.stack);
-      setError(err.message || 'Failed to fetch payments');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch KPI counts separately for accuracy
-  const fetchKPICounts = useCallback(async () => {
-    try {
-      console.log('🔵 Fetching payment KPI counts...');
-      const counts = await paymentService.getCounts();
-      console.log('🔵 KPI Counts received:', counts);
-      setKpiCounts(counts);
-    } catch (err) {
-      console.error('❌ Error fetching KPI counts:', err);
-      // Don't set error, just use fallback calculation
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPayments();
-    fetchKPICounts();
-  }, [fetchPayments, fetchKPICounts]);
 
   /* ---------- KPI Metrics - Use Server-Side Counts for Accuracy ---------- */
   const metrics = useMemo(() => {
@@ -438,21 +317,18 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           text: 'Process',
           onPress: async () => {
             try {
-              setLoading(true);
-              await paymentService.processPayment(paymentToProcess?.id);
+              await processPayment(paymentToProcess?.id);
               Alert.alert('Success', 'Payment processed successfully!');
-              await fetchPayments(); // Refresh the list
+              refreshPayments(); // Refresh the list
             } catch (error) {
               console.error('Process payment error:', error);
               Alert.alert('Error', error.message || 'Failed to process payment. Please try again.');
-            } finally {
-              setLoading(false);
             }
           }
         }
       ]
     );
-  }, [selectedPayment, handleCloseActionSheet, fetchPayments]);
+  }, [selectedPayment, handleCloseActionSheet, refreshPayments]);
 
   const handleVoidPayment = useCallback(() => {
     console.log('Void payment:', selectedPayment?.id);
@@ -468,15 +344,12 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              setLoading(true);
-              await paymentService.voidPayment(paymentToVoid?.id);
+              await voidPayment(paymentToVoid?.id);
               Alert.alert('Success', 'Payment voided successfully!');
-              await fetchPayments(); // Refresh the list
+              refreshPayments(); // Refresh the list
             } catch (error) {
               console.error('Void payment error:', error);
               Alert.alert('Error', error.message || 'Failed to void payment. Please try again.');
-            } finally {
-              setLoading(false);
             }
           }
         }
@@ -498,15 +371,12 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              setLoading(true);
-              await paymentService.refundPayment(paymentToRefund?.id);
+              await refundPayment(paymentToRefund?.id);
               Alert.alert('Success', 'Refund initiated successfully!');
-              await fetchPayments(); // Refresh the list
+              refreshPayments(); // Refresh the list
             } catch (error) {
               console.error('Refund payment error:', error);
               Alert.alert('Error', error.message || 'Failed to initiate refund. Please try again.');
-            } finally {
-              setLoading(false);
             }
           }
         }
@@ -534,15 +404,12 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              setLoading(true);
-              await paymentService.delete(paymentToDelete?.id);
+              await deletePayment(paymentToDelete?.id);
               Alert.alert('Success', 'Payment deleted successfully!');
-              await fetchPayments(); // Refresh the list
+              refreshPayments(); // Refresh the list
             } catch (error) {
               console.error('Delete payment error:', error);
               Alert.alert('Error', error.message || 'Failed to delete payment. Please try again.');
-            } finally {
-              setLoading(false);
             }
           }
         }
@@ -649,7 +516,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {error && !loading && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Error: {error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchPayments}>
+            <TouchableOpacity style={styles.retryButton} onPress={refreshPayments}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
