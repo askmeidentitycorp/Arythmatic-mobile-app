@@ -161,11 +161,15 @@ export default function CustomerScreen({ navigation }) {
         setModalMode('edit');
         setModalVisible(true);
         break;
-      case "View Orders":
-        Alert.alert("View Orders", `Orders for ${customer.displayName} - Feature coming soon`);
+      case "View Invoices":
+        if (navigation?.navigate) {
+          navigation.navigate('Invoices', { customerId: customer.id, customerName: customer.displayName, from: 'Customers' });
+        }
         break;
       case "View Interactions":
-        Alert.alert("View Interactions", `Interactions for ${customer.displayName} - Feature coming soon`);
+        if (navigation?.navigate) {
+          navigation.navigate('Interactions', { customerId: customer.id, customerName: customer.displayName, from: 'Customers' });
+        }
         break;
       case "Activate":
       case "Deactivate":

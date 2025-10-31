@@ -38,9 +38,11 @@ const AppContent = () => {
   console.log("✅ App.js mounted with auth user:", user?.email);
 
   // Function to navigate to Interactions
-  const navigateToInteractions = (repId, repName, fromScreen = null) => {
-    setNavigationParams({ repId, repName });
-    setNavigationContext(fromScreen ? { from: fromScreen, type: 'action' } : null);
+  const navigateToInteractions = (params) => {
+    // params can contain repId/repName or customerId/customerName and optional from
+    const { repId, repName, customerId, customerName, from } = params || {};
+    setNavigationParams({ repId, repName, customerId, customerName });
+    setNavigationContext(from ? { from, type: 'action' } : null);
     setCurrentScreen("Business");
     setBusinessScreen("Interactions");
   };
@@ -53,9 +55,11 @@ const AppContent = () => {
   };
 
   // Function to navigate to Invoices with context
-  const navigateToInvoices = (salesRepId, salesRepName, fromScreen = null) => {
-    setNavigationParams({ salesRepId, salesRepName });
-    setNavigationContext(fromScreen ? { from: fromScreen, type: 'action' } : null);
+  const navigateToInvoices = (params) => {
+    // params can contain salesRepId/salesRepName or customerId/customerName and optional from
+    const { salesRepId, salesRepName, customerId, customerName, from } = params || {};
+    setNavigationParams({ salesRepId, salesRepName, customerId, customerName });
+    setNavigationContext(from ? { from, type: 'action' } : null);
     setCurrentScreen("Business");
     setBusinessScreen("Invoices");
   };
@@ -90,9 +94,9 @@ const AppContent = () => {
     return {
       navigate: (targetScreen, params) => {
         if (targetScreen === 'Interactions') {
-          navigateToInteractions(params.repId, params.repName, params.from);
+          navigateToInteractions(params || {});
         } else if (targetScreen === 'Invoices') {
-          navigateToInvoices(params.salesRepId, params.salesRepName, params.from);
+          navigateToInvoices(params || {});
         }
       },
       goBack: () => {
@@ -309,7 +313,7 @@ const AppContent = () => {
               />
             )}
             {currentScreen === "Business" && businessScreen === "Interactions" && (
-              <InteractionsScreen 
+            <InteractionsScreen 
                 navigation={{
                   ...createNavigationProp('Interactions'),
                   params: navigationParams,
@@ -318,15 +322,19 @@ const AppContent = () => {
                 onBack={navigationContext?.from ? navigateBackFromContext : navigateBackToSalesReps}
                 initialRepId={navigationParams?.repId}
                 initialRepName={navigationParams?.repName}
+                initialCustomerId={navigationParams?.customerId}
+                initialCustomerName={navigationParams?.customerName}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Invoices" && (
-              <InvoicesScreen 
+            <InvoicesScreen 
                 navigation={{
                   ...createNavigationProp('Invoices'),
                   params: navigationParams,
                   backToScreen: navigationContext?.from
                 }}
+                initialCustomerId={navigationParams?.customerId}
+                initialCustomerName={navigationParams?.customerName}
               />
             )}
             {currentScreen === "Business" && businessScreen === "Payments" && (

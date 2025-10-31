@@ -48,7 +48,7 @@ const LabeledInput = ({ label, value, onChangeText, placeholder, multiline, ...r
   );
 };
 
-export default function InteractionScreen({ navigation, onBack, initialRepId, initialRepName }) {
+export default function InteractionScreen({ navigation, onBack, initialRepId, initialRepName, initialCustomerId, initialCustomerName }) {
   const [nameCache, setNameCache] = useState({});
   const fetchingIdsRef = React.useRef(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,22 +72,21 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
   const [openActionsId, setOpenActionsId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [repFilter, setRepFilter] = useState(null);
+  const [customerFilter, setCustomerFilter] = useState(null);
 
   const [searchParams, setSearchParams] = useState({});
 
-  // Set rep filter from props
+  // Set rep/customer filter from props
   useEffect(() => {
     if (initialRepId && initialRepName) {
-      setRepFilter({
-        id: initialRepId,
-        name: initialRepName
-      });
-      setForm(prev => ({
-        ...prev,
-        assignedTo: initialRepName
-      }));
+      setRepFilter({ id: initialRepId, name: initialRepName });
+      setForm(prev => ({ ...prev, assignedTo: initialRepName }));
     }
-  }, [initialRepId, initialRepName]);
+    if (initialCustomerId && initialCustomerName) {
+      setCustomerFilter({ id: initialCustomerId, name: initialCustomerName });
+      setForm(prev => ({ ...prev, customer: initialCustomerName }));
+    }
+  }, [initialRepId, initialRepName, initialCustomerId, initialCustomerName]);
 
   // Debounce search
   useEffect(() => {
@@ -97,10 +96,9 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         ...filters,
       };
       
-      // Add rep filter if active
-      if (repFilter) {
-        params.assigned_to = repFilter.id;
-      }
+      // Add rep/customer filter if active
+      if (repFilter) params.assigned_to = repFilter.id;
+      if (customerFilter) params.customer = customerFilter.id;
       
       setSearchParams(params);
     }, 300);

@@ -55,7 +55,7 @@ const TwoCol = ({ children }) => {
   return <View style={styles.twoCol}>{kids}</View>;
 };
 
-export default function InvoiceScreen() {
+export default function InvoiceScreen({ initialCustomerId, initialCustomerName }) {
   const [nameCache, setNameCache] = useState({});
   const fetchingIdsRef = React.useRef(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,17 +83,27 @@ export default function InvoiceScreen() {
   const [openActionsId, setOpenActionsId] = useState(null);
   const [modalActiveTab, setModalActiveTab] = useState(0);
   const [searchParams, setSearchParams] = useState({});
+  const [customerFilter, setCustomerFilter] = useState(null);
 
   // Animation for actions menu
   const actionsMenuAnim = React.useRef(new Animated.Value(0)).current;
 
+  // Apply initial customer filter
+  useEffect(() => {
+    if (initialCustomerId && initialCustomerName) {
+      setCustomerFilter({ id: initialCustomerId, name: initialCustomerName });
+    }
+  }, [initialCustomerId, initialCustomerName]);
+
   // Debounce search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setSearchParams({
+      const params = {
         search: searchQuery,
         ...filters,
-      });
+      };
+      if (customerFilter) params.customer = customerFilter.id;
+      setSearchParams(params);
     }, 300);
 
     return () => clearTimeout(timeoutId);
