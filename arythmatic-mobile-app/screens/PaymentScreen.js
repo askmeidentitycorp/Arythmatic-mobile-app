@@ -192,12 +192,13 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       const transformedPayments = (response.results || []).map(payment => {
         // Try to extract customer info from various sources
         const customerId = payment.customer?.id || payment.customer_id || payment.customer || payment.created_by || null;
-        const customerName = payment.customer_name || 
-                           payment.customer?.name || 
+        const customerName = payment.customer_details?.display_name || 
+                           payment.customer_details?.displayName ||
+                           payment.customer_details?.name ||
                            payment.customer?.display_name ||
                            payment.customer?.displayName || 
-                           payment.customer_details?.displayName ||
-                           payment.customer_details?.name || 
+                           payment.customer?.name || 
+                           payment.customer_name || 
                            ''; // leave empty to resolve asynchronously
         
         return {
@@ -238,7 +239,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         try {
           const data = await customerService.getById(cid);
           const cust = data?.data || data;
-          const displayName = cust?.displayName || cust?.name || cust?.full_name || cust?.email || 'Customer';
+          const displayName = cust?.display_name || cust?.displayName || cust?.name || cust?.full_name || cust?.email || 'Customer';
           setNameCache(prev => ({ ...prev, [cid]: displayName }));
           setPayments(prev => prev.map(p => (p.customerId === cid && (!p.customerName || p.customerName === '')) ? { ...p, customerName: displayName } : p));
         } catch (e) {

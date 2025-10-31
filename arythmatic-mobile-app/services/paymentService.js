@@ -14,9 +14,12 @@ export const paymentService = {
   // Get payment counts and totals
   getCounts: async () => {
     try {
-      // Fetch all payments with minimal data to calculate accurate counts
+      console.log('📊 Fetching payment counts from API...');
+      // Fetch all payments to calculate accurate counts
       const response = await apiClient.get('/payments/', { page: 1, page_size: 10000 });
       const payments = response?.results || response?.data?.results || [];
+      
+      console.log(`📊 Retrieved ${payments.length} payments for counting`);
       
       const counts = {
         total: payments.length,
@@ -36,16 +39,24 @@ export const paymentService = {
           counts.successful += amount;
         } else if (status === 'failed') {
           counts.failed += amount;
-        } else if (status === 'voided' || status === 'void') {
+        } else if (status === 'voided' || status === 'void' || status === 'cancelled') {
           counts.voided += amount;
         } else {
           counts.pending += amount;
         }
       });
       
+      console.log('📊 Payment counts calculated:', {
+        total: counts.total,
+        totalValue: counts.totalValue.toFixed(2),
+        successful: counts.successful.toFixed(2),
+        failed: counts.failed.toFixed(2),
+        voided: counts.voided.toFixed(2)
+      });
+      
       return counts;
     } catch (error) {
-      console.error('Error fetching payment counts:', error);
+      console.error('❌ Error fetching payment counts:', error);
       throw error;
     }
   },
