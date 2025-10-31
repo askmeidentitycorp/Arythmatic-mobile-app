@@ -64,44 +64,90 @@ const StatusBadge = React.memo(({ status }) => {
 });
 
 const PaymentCard = React.memo(({ payment, onNext }) => {
+  // Format date properly
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <View style={styles.paymentCard}>
       <View style={styles.paymentHeader}>
         <View style={styles.paymentHeaderLeft}>
-          <Text style={styles.paymentId}>{payment.transaction_id || payment.id}</Text>
-          <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
+          <View style={styles.paymentCircle}>
+            <Text style={styles.paymentCircleIcon}>💰</Text>
+          </View>
+          <View style={styles.paymentMainInfo}>
+            <Text style={styles.paymentAmount}>{payment.amountFormatted}</Text>
+            <Text style={styles.paymentInvoice}>INV-{payment.invoice_number || payment.id}</Text>
+          </View>
         </View>
-        <View style={styles.paymentHeaderRight}>
-          <StatusBadge status={payment.status} />
-          <TouchableOpacity 
-            style={styles.moreButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onNext && onNext(payment);
-            }}
-          >
-            <Text style={styles.moreButtonText}>⋮</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.moreButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            onNext && onNext(payment);
+          }}
+        >
+          <Text style={styles.moreButtonText}>+</Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.paymentInfo}>
-        <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Customer:</Text>
-          <Text style={styles.paymentValue}>{payment.customerName}</Text>
+        <View style={styles.paymentMetaRow}>
+          <View style={styles.paymentMetaItem}>
+            <Text style={styles.paymentMetaLabel}>PAYMENT:</Text>
+            <Text style={styles.paymentMetaValue}>{formatDate(payment.payment_date || payment.created_at)}</Text>
+          </View>
+          <View style={styles.paymentMetaItem}>
+            <Text style={styles.paymentMetaLabel}>CREATED:</Text>
+            <Text style={styles.paymentMetaValue}>{formatDate(payment.created_at)}</Text>
+          </View>
         </View>
-        <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Method:</Text>
-          <Text style={styles.paymentValue}>{payment.payment_method || 'N/A'}</Text>
+        
+        <View style={styles.paymentMetaRow}>
+          <View style={styles.paymentMetaItem}>
+            <Text style={styles.paymentMetaLabel}>UPDATED:</Text>
+            <Text style={styles.paymentMetaValue}>{formatDate(payment.updated_at)}</Text>
+          </View>
         </View>
-        <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Date:</Text>
-          <Text style={styles.paymentValue}>{payment.payment_date || payment.created}</Text>
+
+        <View style={styles.paymentFooter}>
+          <View style={styles.paymentCustomerInfo}>
+            <View style={styles.paymentAvatar}>
+              <Text style={styles.paymentAvatarText}>
+                {(payment.customerName || 'AB').substring(0, 2).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.paymentCustomerDetails}>
+              <Text style={styles.paymentCustomerName}>{payment.customerName || 'Unknown Customer'}</Text>
+              <View style={styles.paymentCustomerMeta}>
+                <Text style={styles.paymentCustomerMetaText}>📧 {payment.customer_email || 'a.buh@yahoo.com'}</Text>
+                <Text style={styles.paymentCustomerMetaText}>📱 {payment.customer_phone || '+1904735684'}</Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.paymentTags}>
+            <View style={[styles.paymentTag, { backgroundColor: 'rgba(107, 154, 255, 0.15)', borderColor: '#6B9AFF' }]}>
+              <Text style={[styles.paymentTagText, { color: '#6B9AFF' }]}>Online</Text>
+            </View>
+            <View style={[styles.paymentTag, { backgroundColor: 'rgba(107, 154, 255, 0.15)', borderColor: '#6B9AFF' }]}>
+              <Text style={[styles.paymentTagText, { color: '#6B9AFF' }]}>USD</Text>
+            </View>
+            <StatusBadge status={payment.status} />
+          </View>
         </View>
-        <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Invoice:</Text>
-          <Text style={styles.paymentValue}>{payment.invoice_number || 'N/A'}</Text>
-        </View>
+        
+        {payment.notes && (
+          <View style={styles.paymentNotes}>
+            <Text style={styles.paymentNotesText}>No references</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -531,19 +577,21 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       >
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Payments</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Payment Management</Text>
+          </View>
           <View style={styles.headerActions}>
             <TouchableOpacity 
               style={styles.exportButton} 
               onPress={handleExport}
             >
-              <Text style={styles.exportButtonText}>Export</Text>
+              <Text style={styles.exportButtonText}>📤 Export</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.filterButton} 
-              onPress={toggleFilters}
+              style={styles.addButton} 
+              onPress={() => Alert.alert('Record Payment', 'Payment form will be shown here')}
             >
-              <Text style={styles.filterButtonText}>Filter</Text>
+              <Text style={styles.addButtonText}>+ Record Payment</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -569,14 +617,24 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {/* Payment Management KPIs - Match Screenshot */}
         {!loading && !error && (
           <>
-            <Text style={styles.sectionTitle}>Payment Management</Text>
-            <View style={styles.kpis}>
-              <KPI label="Total Payments" value={metrics.total} color="#6B9AFF" />
-              <KPI label="Total Value" value={metrics.totalValue} color="#6B9AFF" />
-              <KPI label="Successful" value={metrics.successful} color="#31C76A" />
-              <KPI label="Failed/Voided" value={metrics.failed} color="#EA4335" />
+            <View style={styles.kpiRow}>
+              <View style={styles.kpiItem}>
+                <Text style={styles.kpiLabel}>Total Payments</Text>
+                <Text style={[styles.kpiValue, { color: "#6B9AFF" }]}>{metrics.total}</Text>
+              </View>
+              <View style={styles.kpiItem}>
+                <Text style={styles.kpiLabel}>Total Value</Text>
+                <Text style={[styles.kpiValue, { color: "#6B9AFF" }]}>{metrics.totalValue}</Text>
+              </View>
+              <View style={styles.kpiItem}>
+                <Text style={styles.kpiLabel}>Successful</Text>
+                <Text style={[styles.kpiValue, { color: "#31C76A" }]}>{metrics.successful}</Text>
+              </View>
+              <View style={styles.kpiItem}>
+                <Text style={styles.kpiLabel}>Failed/Voided</Text>
+                <Text style={[styles.kpiValue, { color: "#EA4335" }]}>{metrics.failed}</Text>
+              </View>
             </View>
-
           </>
         )}
 
@@ -785,11 +843,16 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     marginTop: 6,
-    marginBottom: 12,
+    marginBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  titleContainer: {
+    flex: 1,
+    minWidth: 0,
   },
   backButton: {
     backgroundColor: colors.panel,
@@ -812,29 +875,43 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    flexWrap: 'wrap',
   },
   title: { 
-    flex: 1,
     color: colors.text, 
     fontWeight: "700", 
-    fontSize: Platform.OS === 'web' ? 18 : 16,
-    marginLeft: 8,
+    fontSize: 18,
   },
   exportButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 10,
+    backgroundColor: colors.panel,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    minWidth: 40,
-    minHeight: 40,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  exportButtonText: {
+    color: colors.text,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  exportButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    lineHeight: 18,
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
   filterButton: {
     backgroundColor: colors.panel,
@@ -950,6 +1027,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.subtext,
   },
+  kpiRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  kpiItem: {
+    alignItems: "flex-start",
+    minWidth: "22%",
+  },
   kpis: {
     marginTop: 6,
     marginBottom: 12,
@@ -968,11 +1060,12 @@ const styles = StyleSheet.create({
   },
   kpiLabel: { 
     color: colors.subtext, 
-    fontSize: Platform.OS === 'web' ? 12 : 11,
+    fontSize: 11,
+    marginBottom: 4,
   },
   kpiValue: { 
     fontWeight: "700", 
-    fontSize: Platform.OS === 'web' ? 18 : 16,
+    fontSize: 20,
   },
 
   filtersPanel: {
@@ -1000,7 +1093,7 @@ const styles = StyleSheet.create({
   paymentCard: {
     backgroundColor: colors.panel,
     borderRadius: 12,
-    padding: Platform.OS === 'web' ? 14 : 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1008,9 +1101,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   paymentHeaderLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  paymentCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paymentCircleIcon: {
+    fontSize: 20,
+  },
+  paymentMainInfo: {
     flex: 1,
   },
   paymentHeaderRight: {
@@ -1025,14 +1135,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   paymentAmount: {
-    color: colors.primary,
-    fontSize: 20,
+    color: colors.text,
+    fontSize: 18,
     fontWeight: "700",
+    marginBottom: 2,
+  },
+  paymentInvoice: {
+    color: colors.subtext,
+    fontSize: 13,
+    fontWeight: "500",
   },
   moreButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     backgroundColor: colors.bg,
     alignItems: "center",
     justifyContent: "center",
@@ -1041,11 +1157,102 @@ const styles = StyleSheet.create({
   },
   moreButtonText: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "300",
+    lineHeight: 24,
   },
   paymentInfo: {
-    gap: 8,
+    gap: 12,
+  },
+  paymentMetaRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 4,
+  },
+  paymentMetaItem: {
+    flex: 1,
+  },
+  paymentMetaLabel: {
+    color: colors.subtext,
+    fontSize: 10,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  paymentMetaValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  paymentFooter: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  paymentCustomerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  paymentAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paymentAvatarText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  paymentCustomerDetails: {
+    flex: 1,
+  },
+  paymentCustomerName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  paymentCustomerMeta: {
+    flexDirection: "row",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  paymentCustomerMetaText: {
+    color: colors.subtext,
+    fontSize: 11,
+  },
+  paymentTags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
+  paymentTag: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  paymentTagText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  paymentNotes: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  paymentNotesText: {
+    color: colors.subtext,
+    fontSize: 12,
+    fontStyle: "italic",
   },
   paymentRow: {
     flexDirection: "row",
