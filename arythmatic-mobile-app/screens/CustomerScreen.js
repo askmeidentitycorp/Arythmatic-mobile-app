@@ -144,7 +144,7 @@ export default function CustomerScreen({ navigation }) {
   };
 
   const handleCustomerAction = async (customer, action) => {
-    console.log('🎯 Customer Action:', { action, customer: customer.displayName });
+    console.log('Customer Action:', { action, customer: customer.displayName });
 
     switch (action) {
       case "View Details":
@@ -240,17 +240,17 @@ export default function CustomerScreen({ navigation }) {
       };
 
       if (modalMode === 'create') {
-        console.log('🆕 Creating customer:', payload);
+        console.log('Creating customer:', payload);
         await createCustomer(payload, true); // useNested = true
         Alert.alert('Success', 'Customer created successfully!');
       } else {
-        console.log('📝 Updating customer:', selectedCustomer.id, payload);
+        console.log('Updating customer:', selectedCustomer.id, payload);
         await updateCustomer(selectedCustomer.id, payload, true, false); // useNested = true, partial = false
         Alert.alert('Success', 'Customer updated successfully!');
       }
       refresh();
     } catch (error) {
-      console.error('❌ Form submission error:', error);
+      console.error('Form submission error:', error);
       throw error; // Re-throw to let CrudModal handle the error display
     }
   };
@@ -412,7 +412,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-    paddingBottom: 100,
   },
   centerContainer: {
     justifyContent: 'center',

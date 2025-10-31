@@ -169,7 +169,7 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
   };
 
   const handleSalesRepAction = async (salesRep, action) => {
-    console.log('🎯 Sales Rep Action:', { action, salesRep: salesRep.name });
+    console.log('Sales Rep Action:', { action, salesRep: salesRep.name });
 
     switch (action) {
       case "Deactivate":
@@ -290,17 +290,17 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
       }
       
       if (modalMode === 'create') {
-        console.log('🆕 Creating sales rep:', formData);
+        console.log('Creating sales rep:', formData);
         await createSalesRep(formData);
         Alert.alert('Success', 'Sales rep created successfully!');
       } else {
-        console.log('📝 Updating sales rep:', selectedSalesRep.id, formData);
+        console.log('Updating sales rep:', selectedSalesRep.id, formData);
         await updateSalesRep(selectedSalesRep.id, formData, false, true); // useNested = false, partial = true
         Alert.alert('Success', 'Sales rep updated successfully!');
       }
       refresh();
     } catch (error) {
-      console.error('❌ Sales rep form submission error:', error);
+      console.error('Sales rep form submission error:', error);
       throw error; // Re-throw to let CrudModal handle the error display
     }
   };

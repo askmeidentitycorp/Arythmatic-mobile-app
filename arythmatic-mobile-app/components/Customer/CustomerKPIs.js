@@ -15,7 +15,7 @@ const CustomerKPIs = ({ customers = [], totalCount = 0 }) => {
   const metrics = React.useMemo(() => {
     // FIXED: Add safety check for undefined customers
     if (!customers || !Array.isArray(customers)) {
-      console.log('⚠️ CustomerKPIs: customers is not an array:', customers);
+      console.log('CustomerKPIs: customers is not an array:', customers);
       return {
         total: totalCount,
         individual: 0,
@@ -24,8 +24,8 @@ const CustomerKPIs = ({ customers = [], totalCount = 0 }) => {
       };
     }
 
-    console.log('🔢 Calculating KPIs from customers:', customers.length);
-    console.log('📋 Sample customer data:', customers[0]);
+    console.log('Calculating KPIs from customers:', customers.length);
+    console.log('Sample customer data:', customers[0]);
 
     // Count by type (Individual/Business)
     const individual = customers.filter((c) => c?.type === "Individual").length;
@@ -36,7 +36,7 @@ const CustomerKPIs = ({ customers = [], totalCount = 0 }) => {
     const active = customers.filter((c) => c?.is_deleted === false || !c?.is_deleted).length;
     const deleted = customers.filter((c) => c?.is_deleted === true).length;
 
-    console.log('✅ Calculated metrics:', {
+    console.log('Calculated metrics:', {
       total: totalCount,
       individual,
       business,

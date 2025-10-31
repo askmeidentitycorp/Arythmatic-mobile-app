@@ -141,7 +141,7 @@ export default function ProductScreen({ navigation }) {
   ];
 
   const handleProductAction = async (product, action) => {
-    console.log('🎯 Product Action:', { action, product: product.label });
+    console.log('Product Action:', { action, product: product.label });
 
     switch (action) {
       case "Deactivate":
@@ -224,17 +224,17 @@ export default function ProductScreen({ navigation }) {
       }
       
       if (modalMode === 'create') {
-        console.log('🆕 Creating product:', formData);
+        console.log('Creating product:', formData);
         await createProduct(formData, true); // useNested = true
         Alert.alert('Success', 'Product created successfully!');
       } else {
-        console.log('📝 Updating product:', selectedProduct.id, formData);
+        console.log('Updating product:', selectedProduct.id, formData);
         await updateProduct(selectedProduct.id, formData, true, false); // useNested = true, partial = false
         Alert.alert('Success', 'Product updated successfully!');
       }
       refresh();
     } catch (error) {
-      console.error('❌ Product form submission error:', error);
+      console.error('Product form submission error:', error);
       throw error; // Re-throw to let CrudModal handle the error display
     }
   };

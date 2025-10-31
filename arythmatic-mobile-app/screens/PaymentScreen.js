@@ -311,7 +311,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   const [showActionSheet, setShowActionSheet] = useState(false);
 
   const handleNextPayment = useCallback((payment) => {
-    console.log("💳 Payment action menu clicked:", payment.id);
+    console.log("Payment action menu clicked:", payment.id);
     setSelectedPayment(payment);
     setShowActionSheet(true);
   }, []);
@@ -537,13 +537,13 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               style={styles.exportButton} 
               onPress={handleExport}
             >
-              <Text style={styles.exportButtonText}>📤</Text>
+              <Text style={styles.exportButtonText}>Export</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.filterButton} 
               onPress={toggleFilters}
             >
-              <Text style={styles.filterButtonText}>🔍</Text>
+              <Text style={styles.filterButtonText}>Filter</Text>
             </TouchableOpacity>
           </View>
         </View>

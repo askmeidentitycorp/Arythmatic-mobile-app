@@ -12,8 +12,8 @@ const KPI = ({ label, value, color = "#9695D7" }) => (
 
 const ProductKPIs = ({ products, totalCount }) => {
   const metrics = React.useMemo(() => {
-    console.log('🔢 Calculating Product KPIs from:', products.length, 'products');
-    console.log('📋 Sample product data:', products[0]);
+    console.log('Calculating Product KPIs from:', products.length, 'products');
+    console.log('Sample product data:', products[0]);
 
     // FIXED: Count by productType (matching web app logic)
     const digital = products.filter((p) => p.productType === 'digital').length;
@@ -24,7 +24,7 @@ const ProductKPIs = ({ products, totalCount }) => {
     const active = products.filter((p) => p.isActive === true).length;
     const inactive = products.filter((p) => p.isActive === false).length;
 
-    console.log('✅ Calculated Product Metrics:', { 
+    console.log('Calculated Product Metrics:', {
       total: totalCount,
       digital,
       physical,

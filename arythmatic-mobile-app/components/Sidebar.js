@@ -72,9 +72,9 @@ export default function Sidebar({
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* ✅ Dashboard */}
+        {/* Dashboard */}
         <SidebarItem
-          icon="📊"
+          icon="▤"
           label="Dashboard"
           active={currentScreen === "Dashboard"}
           onPress={() => handleNavigation("Dashboard")}
@@ -82,7 +82,7 @@ export default function Sidebar({
           labelOpacity={labelOpacity}
         />
 
-        {/* ✅ Business group */}
+        {/* Business group */}
         <BusinessGroup
           menuOpen={menuOpen}
           labelOpacity={labelOpacity}
@@ -106,12 +106,12 @@ function BusinessGroup({
   const [open, setOpen] = useState(true);
 
   const items = [
-    { key: "SalesReps", icon: "👥", label: "Sales Reps" },
-    { key: "Customers", icon: "📇", label: "Customers" },
-    { key: "Products", icon: "📦", label: "Products" },
-    { key: "Interactions", icon: "☎️", label: "Interactions" },
-    { key: "Invoices", icon: "🧾", label: "Invoices" },
-    { key: "Payments", icon: "💳", label: "Payments" },
+    { key: "SalesReps", icon: "◉", label: "Sales Reps" },
+    { key: "Customers", icon: "◉", label: "Customers" },
+    { key: "Products", icon: "◉", label: "Products" },
+    { key: "Interactions", icon: "◉", label: "Interactions" },
+    { key: "Invoices", icon: "◉", label: "Invoices" },
+    { key: "Payments", icon: "◉", label: "Payments" },
   ];
 
   return (
@@ -121,7 +121,7 @@ function BusinessGroup({
         style={styles.groupRow}
         onPress={() => setOpen((o) => !o)}
       >
-        <Text style={styles.groupIcon}>💼</Text>
+        <Text style={styles.groupIcon}>▣</Text>
         {menuOpen && (
           <>
             <Animated.Text

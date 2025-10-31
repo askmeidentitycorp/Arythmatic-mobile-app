@@ -20,7 +20,7 @@ const CustomerPagination = ({
 
   const handlePrevious = () => {
     const targetPage = currentPage - 1;
-    console.log('⬅️ Previous button clicked:', {
+    console.log('Previous button clicked:', {
       currentPage,
       targetPage,
       hasPrevious,
@@ -29,16 +29,16 @@ const CustomerPagination = ({
     });
     
     if (hasPrevious && currentPage > 1 && !loading) {
-      console.log('✅ Calling onPageChange for previous page:', targetPage);
+      console.log('Calling onPageChange for previous page:', targetPage);
       onPageChange(targetPage);
     } else {
-      console.log('⚠️ Previous navigation blocked');
+      console.log('Previous navigation blocked');
     }
   };
 
   const handleNext = () => {
     const targetPage = currentPage + 1;
-    console.log('➡️ Next button clicked:', {
+    console.log('Next button clicked:', {
       currentPage,
       targetPage,
       totalPages,
@@ -48,10 +48,10 @@ const CustomerPagination = ({
     });
     
     if (hasNext && currentPage < totalPages && !loading) {
-      console.log('✅ Calling onPageChange for next page:', targetPage);
+      console.log('Calling onPageChange for next page:', targetPage);
       onPageChange(targetPage);
     } else {
-      console.log('⚠️ Next navigation blocked');
+      console.log('Next navigation blocked');
     }
   };
 
@@ -59,7 +59,7 @@ const CustomerPagination = ({
   const startItem = ((currentPage - 1) * pageSize) + 1;
   const endItem = Math.min(currentPage * pageSize, totalCount);
   
-  console.log('🖥️ Rendering pagination:', {
+  console.log('Rendering pagination:', {
     currentPage,
     totalPages,
     hasNext,

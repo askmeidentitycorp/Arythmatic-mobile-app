@@ -14,8 +14,8 @@ const KPI = ({ label, value, color = "#9695D7", isAmount = false }) => (
 
 const InvoiceKPIs = ({ invoices, totalCount }) => {
   const metrics = React.useMemo(() => {
-    console.log('🔢 Calculating Invoice KPIs from:', invoices.length, 'invoices');
-    console.log('📋 Sample invoice:', invoices[0]);
+    console.log('Calculating Invoice KPIs from:', invoices.length, 'invoices');
+    console.log('Sample invoice:', invoices[0]);
 
     // FIXED: Count by status (matching web app exact logic)
     const draft = invoices.filter((i) => i.status === 'draft').length;
@@ -63,7 +63,7 @@ const InvoiceKPIs = ({ invoices, totalCount }) => {
       return sum;
     }, 0);
 
-    console.log('✅ Calculated Invoice Metrics:', { 
+    console.log('Calculated Invoice Metrics:', {
       total: totalCount,
       draft,
       open,
