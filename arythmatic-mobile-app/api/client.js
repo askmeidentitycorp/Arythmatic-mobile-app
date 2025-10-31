@@ -220,6 +220,3 @@ export const upload = async (url, formData, config = {}) => {
 
 // Export client instance for advanced usage
 export default apiClient;
-
-// Export helpers as named exports
-export { get, post, put, patch, del, upload };
