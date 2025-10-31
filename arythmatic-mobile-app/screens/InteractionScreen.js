@@ -146,7 +146,10 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
 
   const handleInteractionAction = async (interaction, action) => {
     switch (action) {
-      case "Edit":
+      case "View Details":
+        Alert.alert('Interaction Details', `Customer: ${interaction.customer_details?.displayName || interaction.customer}\nAssigned: ${interaction.assigned_to_name || interaction.assignedTo || 'Unassigned'}\nStatus: ${interaction.status}`);
+        break;
+      case "Edit Interaction":
         setForm({
           customer: interaction.customer || "",
           assignedTo: interaction.assignedTo || interaction.assigned_to_name || "",
@@ -158,6 +161,32 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
           description: interaction.description || "",
         });
         setShowAdd(true);
+        break;
+
+      case "Create Invoice":
+        if (navigation?.navigateToInvoices) {
+          const cid = interaction.customer_details?.id || interaction.customer_id;
+          const cname = interaction.customer_details?.displayName || interaction.customer;
+          navigation.navigateToInvoices({ customerId: cid, customerName: cname, from: 'Interactions' });
+        }
+        break;
+
+      case "Duplicate":
+        try {
+          const dup = { ...interaction, id: undefined, status: interaction.status || 'new' };
+          await createInteraction(dup, true);
+          refresh();
+          Alert.alert('Success', 'Interaction duplicated');
+        } catch (e) {
+          Alert.alert('Error', 'Failed to duplicate');
+        }
+        break;
+
+      case "Manage Notes":
+      case "Manage Products":
+      case "Status History":
+      case "Audit History":
+        Alert.alert(action, 'Not implemented yet');
         break;
 
       case "Mark as New":
@@ -259,6 +288,42 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
     }
   };
 
+  // Export CSV
+  const handleExportCSV = async () => {
+    try {
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await interactionService.getAll({ ...searchParams, page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+      const headers = ['id','customer','assigned_to','interaction_type','status','priority','scheduled_date'];
+      const csv = [headers.join(',')].concat(
+        rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
+      ).join('\n');
+      const { Platform, Share } = await import('react-native');
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.setAttribute('download', 'interactions.csv');
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        await Share.share({ title: 'Interactions CSV', message: csv });
+      }
+    } catch (e) {
+      Alert.alert('Export Failed', e.message || 'Could not export CSV');
+    }
+  };
+
+  // Metrics
+  const metrics = useInteractionMetrics();
+
   // Loading state
   if (loading && interactions.length === 0) {
     return (
@@ -286,6 +351,7 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
         <InteractionHeader 
           onAddPress={handleAddInteraction}
+          onExport={handleExportCSV}
           totalCount={pagination.totalCount}
           repFilter={repFilter}
           onClearRepFilter={handleClearRepFilter}
@@ -294,7 +360,11 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         
         <InteractionKPIs 
           interactions={interactions}
-          totalCount={pagination.totalCount}
+          totalCount={metrics.totalCount}
+          newCount={metrics.newCount}
+          inProgressCount={metrics.inProgressCount}
+          completedCount={metrics.completedCount}
+          cancelledCount={metrics.cancelledCount}
         />
 
         <InteractionSearchAndFilters
@@ -354,7 +424,14 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
                 {openActionsId === item.id && (
                   <View style={styles.actionsMenu}>
                     {[
-                      "Edit",
+                      "View Details",
+                      "Edit Interaction",
+                      "Create Invoice",
+                      "Duplicate",
+                      "Manage Notes",
+                      "Manage Products",
+                      "Status History",
+                      "Audit History",
                       "Mark as New",
                       "Mark as In Progress", 
                       "Mark as Completed",

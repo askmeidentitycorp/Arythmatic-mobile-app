@@ -2,7 +2,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../constants/config';
 
-const InteractionHeader = ({ onAddPress, totalCount, repFilter, onClearRepFilter, onBack }) => {
+const InteractionHeader = ({ onAddPress, onExport, totalCount, repFilter, onClearRepFilter, onBack }) => {
   return (
     <View>
       {/* Back Button */}
@@ -30,9 +30,14 @@ const InteractionHeader = ({ onAddPress, totalCount, repFilter, onClearRepFilter
           <Text style={styles.title}>Interactions</Text>
           <Text style={styles.subtitle}>{totalCount} total interactions</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={onAddPress}>
-          <Text style={styles.addBtnText}>＋ Create</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity style={[styles.addBtn, styles.exportBtn]} onPress={onExport}>
+            <Text style={styles.exportBtnText}>Export CSV</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addBtn} onPress={onAddPress}>
+            <Text style={styles.addBtnText}>New</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -92,6 +97,15 @@ const styles = StyleSheet.create({
   addBtnText: {
     color: "#fff",
     fontWeight: "700",
+  },
+  exportBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  exportBtnText: {
+    color: colors.text,
+    fontWeight: '700',
   },
 });
 

@@ -10,16 +10,16 @@ const KPI = ({ label, value, color = "#9695D7" }) => (
   </View>
 );
 
-const InteractionKPIs = ({ interactions, totalCount }) => {
+const InteractionKPIs = ({ interactions, totalCount, newCount, inProgressCount, completedCount, cancelledCount }) => {
   const metrics = React.useMemo(() => {
     console.log('🔢 Calculating Interaction KPIs from:', interactions.length, 'interactions');
     console.log('📋 Sample interaction:', interactions[0]);
 
     // FIXED: Count by status (matching web app exact logic)
-    const newCount = interactions.filter((i) => i.status === 'new').length;
-    const inProgress = interactions.filter((i) => i.status === 'in_progress').length;
-    const completed = interactions.filter((i) => i.status === 'completed').length;
-    const cancelled = interactions.filter((i) => i.status === 'cancelled').length;
+    const newCountLocal = newCount ?? interactions.filter((i) => i.status === 'new').length;
+    const inProgress = inProgressCount ?? interactions.filter((i) => i.status === 'in_progress').length;
+    const completed = completedCount ?? interactions.filter((i) => i.status === 'completed').length;
+    const cancelled = cancelledCount ?? interactions.filter((i) => i.status === 'cancelled').length;
 
     console.log('✅ Calculated Interaction Metrics:', { 
       total: totalCount,
@@ -32,7 +32,7 @@ const InteractionKPIs = ({ interactions, totalCount }) => {
 
     return {
       total: totalCount,
-      new: newCount,
+      new: newCountLocal,
       inProgress,
       completed,
       cancelled
