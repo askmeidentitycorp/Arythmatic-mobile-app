@@ -1,5 +1,5 @@
 // hooks/usePayments.js
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { paymentService } from '../services/paymentService';
 
 export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
@@ -15,6 +15,9 @@ export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
     hasPrevious: false,
   });
 
+  // Stabilize params to prevent infinite loops
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   const fetchPayments = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -23,7 +26,7 @@ export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
       const requestParams = {
         page,
         page_size: pageSize,
-        ...params,
+        ...stableParams,
       };
 
       console.log('🔍 Fetching payments with params:', requestParams);
@@ -99,7 +102,7 @@ export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
     } finally {
       setLoading(false);
     }
-  }, [params, pageSize, useNested]);
+  }, [stableParams, pageSize, useNested]);
 
   // Initial load
   useEffect(() => {

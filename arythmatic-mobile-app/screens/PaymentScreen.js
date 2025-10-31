@@ -155,10 +155,19 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
 
 /* ---------- Main Component ---------- */
 export default function PaymentScreen({ onNavigateToDetails, navigation }) {
+  console.log('\n🟢 PaymentScreen mounted');
+  
   // Use custom hooks for data fetching
   const { payments, loading, error, refresh: refreshPayments } = usePayments({}, 1000, true);
   const { metrics: kpiCounts } = usePaymentMetrics();
   const { processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
+  
+  console.log('🟢 PaymentScreen state:', { 
+    paymentsLength: payments.length, 
+    loading, 
+    error,
+    kpiCounts 
+  });
   
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState({ 
