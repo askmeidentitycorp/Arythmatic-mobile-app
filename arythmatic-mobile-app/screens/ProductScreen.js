@@ -21,7 +21,6 @@ import ProductKPIs from '../components/Product/ProductKPIs';
 // Import hooks
 import {
   useProductMutations,
-  useProducts
   useProducts,
   useProductMetrics
 } from '../hooks/useProducts';
