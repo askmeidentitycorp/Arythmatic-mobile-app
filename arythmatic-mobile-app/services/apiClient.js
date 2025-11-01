@@ -2,6 +2,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConfig';
+import { handleFetchError, ApiError } from '../utils/errorHandler';
 
 const BASE_URL = "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
 
@@ -96,9 +97,9 @@ class ApiClient {
       if (__DEV__) console.log('📄 API Response Text:', textData);
       return textData;
     } catch (error) {
-      console.error('❌ API Error:', error.message);
-      console.error('🔍 Full Error:', error);
-      throw error;
+      const normalized = handleFetchError(error instanceof Error ? error : new Error(String(error)));
+      console.error('❌ API Error:', normalized.message);
+      throw normalized;
     }
   }
 

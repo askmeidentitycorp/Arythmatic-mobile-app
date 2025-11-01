@@ -185,7 +185,7 @@ const InvoiceCard = ({
               {lineItems.map((item, index) => (
                 <View key={item.id || index} style={styles.itemRow}>
                   <Text style={[styles.detailText, { flex: 1 }]}>
-                    {item.name || item.product_name || item.description}
+                    {item.name || item.product_details?.label || item.product_name || item.description}
                   </Text>
                   <Text style={styles.detailText}>Qty: {item.qty || item.quantity || 0}</Text>
                   <Text style={styles.detailText}>

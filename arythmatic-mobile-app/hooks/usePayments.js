@@ -1,6 +1,7 @@
 // hooks/usePayments.js
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { paymentService } from '../services/paymentService';
+import { normalizePayment } from '../utils/normalizers';
 
 export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
   const [payments, setPayments] = useState([]);
@@ -28,6 +29,9 @@ export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
         page_size: pageSize,
         ...stableParams,
       };
+      if (!('ordering' in requestParams)) {
+        requestParams.ordering = '-created_at';
+      }
 
       console.log('🔍 Fetching payments with params:', requestParams);
 
@@ -59,62 +63,14 @@ export const usePayments = (params = {}, pageSize = 10, useNested = true) => {
         hasPrevious: page > 1,
       };
 
-      // Transform payments for display
-      const transformedPayments = results.map(payment => {
-        // Debug: Log payment structure to see where customer name is
-        if (__DEV__ && results.indexOf(payment) === 0) {
-          console.log('🔍 Payment structure sample:', {
-            id: payment.id,
-            displayName: payment.displayName,
-            customer_details: {
-              displayName: payment.customer_details?.displayName,
-              firstName: payment.customer_details?.firstName,
-              lastname: payment.customer_details?.lastname,
-              contact_details: {
-                emails: payment.customer_details?.contact_details?.emails,
-                phones: payment.customer_details?.contact_details?.phones,
-              },
-            },
-          });
+      // Transform payments for display (centralized normalizer)
+      const transformedPayments = results.map(p => {
+        const np = normalizePayment(p);
+        // Extra fallback: ensure customer name from invoice_details if present
+        if (!np.customerName && p.invoice_details?.customer_details?.displayName) {
+          np.customerName = p.invoice_details.customer_details.displayName;
         }
-        
-        // Extract customer name from response
-        // Based on API structure: customer_details contains nested displayName
-        const customerName = payment.customer_details?.displayName ||
-                           payment.customer_details?.display_name ||
-                           payment.displayName ||
-                           payment.display_name ||
-                           (payment.customer_details?.firstname && payment.customer_details?.lastname ? `${payment.customer_details.firstname} ${payment.customer_details.lastname}` : '') ||
-                           (payment.firstname && payment.lastname ? `${payment.firstname} ${payment.lastname}` : '') ||
-                           payment.firstname ||
-                           payment.customer_details?.name ||
-                           payment.customer?.displayName ||
-                           payment.customer?.display_name ||
-                           payment.customer?.name || 
-                           payment.customer_name || 
-                           'Unknown Customer';
-        
-        return {
-          ...payment,
-          customerName,
-          // Extract customer contact details from deeply nested customer_details.contact_details
-          customer_email: payment.customer_details?.contact_details?.emails?.[0]?.email || 
-                         payment.customer_details?.email || 
-                         payment.email || 
-                         payment.customer_email || 
-                         payment.customer?.email || '',
-          customer_phone: payment.customer_details?.contact_details?.phones?.[0]?.phone || 
-                         payment.customer_details?.phone || 
-                         payment.phone || 
-                         payment.customer_phone || 
-                         payment.customer?.phone || '',
-          // Extract invoice number from invoice_details if available
-          invoice_number: payment.invoice_details?.invoice_number || payment.invoice_details?.invoiceNumber || payment.invoice_number || payment.invoice,
-          // Normalize status to Title Case
-          status: payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1).toLowerCase() : 'Pending',
-          // Format amount with currency symbol
-          amountFormatted: `${payment.currency === 'INR' ? '₹' : payment.currency === 'USD' ? '$' : payment.currency === 'EUR' ? '€' : payment.currency === 'GBP' ? '£' : ''}${parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        };
+        return np;
       });
 
       setPayments(transformedPayments);

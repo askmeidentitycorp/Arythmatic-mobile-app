@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 import { usePayments, usePaymentMetrics, usePaymentMutations } from '../hooks/usePayments';
 import DarkPicker from '../components/Customer/DarkPicker';
+import CustomerPagination from '../components/Customer/CustomerPagination';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -158,7 +159,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   console.log('\n🟢 PaymentScreen mounted');
   
   // Use custom hooks for data fetching
-  const { payments, loading, error, refresh: refreshPayments } = usePayments({}, 1000, true);
+  const { payments, loading, error, refresh: refreshPayments, pagination, goToPage } = usePayments({ }, 10, true);
   const { metrics: kpiCounts } = usePaymentMetrics();
   const { processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
   
@@ -182,72 +183,42 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
   /* ---------- KPI Metrics - Use Server-Side Counts for Accuracy ---------- */
   const metrics = useMemo(() => {
-    // If we have server-side counts, use them for accuracy
+    // Helper: currency symbol
+    const sym = (ccy) => ccy === 'INR' ? '₹' : ccy === 'USD' ? '$' : ccy === 'EUR' ? '€' : ccy === 'GBP' ? '£' : '';
+
+    // Build per-currency totals from current page (also used to render strings when kpiCounts exists)
+    const breakdown = {};
+    payments.forEach(p => {
+      const c = (p.currency || 'USD').toUpperCase();
+      const amt = parseFloat(p.amount) || 0;
+      breakdown[c] ||= { count: 0, total: 0, successful: 0, failed: 0 };
+      breakdown[c].count += 1;
+      breakdown[c].total += amt;
+      if (p.status === 'Success') breakdown[c].successful += amt;
+      if (p.status === 'Failed' || p.status === 'Voided') breakdown[c].failed += amt;
+    });
+
+    // Order currencies: USD first, then others alphabetically
+    const order = Object.keys(breakdown).sort((a,b) => (a==='USD'? -1 : b==='USD'? 1 : a.localeCompare(b)));
+    const fmtJoin = (key) => order.map(ccy => `${sym(ccy)}${(breakdown[ccy][key] || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`).join(' + ');
+
+    // If server KPIs exist, use their counts, but display values per-currency from current page to avoid mixed-symbol errors
     if (kpiCounts) {
-      const symbol = '$'; // Default to USD for display
       return {
-        total: kpiCounts.total || 0,
-        totalValue: `${symbol}${(kpiCounts.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        successful: `${symbol}${(kpiCounts.successful || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        failed: `${symbol}${((kpiCounts.failed || 0) + (kpiCounts.voided || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        total: kpiCounts.total || payments.length || 0,
+        totalValue: fmtJoin('total'),
+        successful: fmtJoin('successful'),
+        failed: fmtJoin('failed'),
+        currencyBreakdown: breakdown,
       };
     }
 
-    // Fallback: Calculate from current page data
-    const totalPayments = payments.length;
-    
-    // FIXED: Calculate totals for ALL currencies (like Dashboard)
-    // Count by currency and calculate totals
-    const currencyBreakdown = {};
-    let totalValueAllCurrencies = 0;
-    let successfulAllCurrencies = 0;
-    let failedAllCurrencies = 0;
-    
-    payments.forEach(payment => {
-      const curr = payment.currency || 'USD';
-      const amt = parseFloat(payment.amount) || 0;
-      
-      // Initialize currency if not exists
-      if (!currencyBreakdown[curr]) {
-        currencyBreakdown[curr] = {
-          count: 0,
-          total: 0,
-          successful: 0,
-          failed: 0,
-        };
-      }
-      
-      // Add to currency breakdown
-      currencyBreakdown[curr].count++;
-      currencyBreakdown[curr].total += amt;
-      
-      // Add to overall totals (without conversion - show multi-currency)
-      totalValueAllCurrencies += amt;
-      
-      if (payment.status === 'Success') {
-        currencyBreakdown[curr].successful += amt;
-        successfulAllCurrencies += amt;
-      } else if (payment.status === 'Failed' || payment.status === 'Voided') {
-        currencyBreakdown[curr].failed += amt;
-        failedAllCurrencies += amt;
-      }
-    });
-    
-    // Format display values - show primary currency (USD) if exists, otherwise show "Mixed"
-    const primaryCurrency = currencyBreakdown['USD'] ? 'USD' : Object.keys(currencyBreakdown)[0] || 'USD';
-    const symbol = primaryCurrency === 'INR' ? '₹' : primaryCurrency === 'USD' ? '$' : primaryCurrency === 'EUR' ? '€' : primaryCurrency === 'GBP' ? '£' : '';
-    
-    // Use USD values if available, otherwise show mixed
-    const displayValue = currencyBreakdown['USD'] ? currencyBreakdown['USD'].total : totalValueAllCurrencies;
-    const displaySuccess = currencyBreakdown['USD'] ? currencyBreakdown['USD'].successful : successfulAllCurrencies;
-    const displayFailed = currencyBreakdown['USD'] ? currencyBreakdown['USD'].failed : failedAllCurrencies;
-    
     return {
-      total: totalPayments,
-      totalValue: `${symbol}${displayValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${Object.keys(currencyBreakdown).length > 1 ? ' +' : ''}`,
-      successful: `${symbol}${displaySuccess.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      failed: `${symbol}${displayFailed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      currencyBreakdown,
+      total: payments.length,
+      totalValue: fmtJoin('total'),
+      successful: fmtJoin('successful'),
+      failed: fmtJoin('failed'),
+      currencyBreakdown: breakdown,
     };
   }, [payments, kpiCounts]);
 
@@ -636,18 +607,30 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
         {/* Payment Cards */}
         {!loading && !error && (
-          <FlatList
-            data={filteredPayments}
-            renderItem={renderPaymentCard}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No payments found</Text>
-              </View>
-            }
-          />
+          <>
+            <FlatList
+              data={filteredPayments}
+              renderItem={renderPaymentCard}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              scrollEnabled={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No payments found</Text>
+                </View>
+              }
+            />
+            <CustomerPagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalCount={pagination.totalCount}
+              pageSize={pagination.pageSize}
+              onPageChange={goToPage}
+              hasNext={pagination.hasNext}
+              hasPrevious={pagination.hasPrevious}
+              loading={loading}
+            />
+          </>
         )}
 
         {/* Payment Action Sheet Modal */}

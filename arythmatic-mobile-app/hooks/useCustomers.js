@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { customerService } from '../services/customerService';
+import { normalizeCustomer } from '../utils/normalizers';
 
 export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
   const [customers, setCustomers] = useState([]);
@@ -53,7 +54,8 @@ export const useCustomers = (params = {}, pageSize = 10, useNested = true) => {
         hasPrevious: page > 1,
       };
 
-      setCustomers(results);
+      // Normalize to ensure displayName etc.
+      setCustomers(results.map(normalizeCustomer));
       setPagination(newPagination);
 
 

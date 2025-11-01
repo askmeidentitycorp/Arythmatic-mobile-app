@@ -2,7 +2,11 @@
 import apiClient from './apiClient';
 
 export const dashboardService = {
-  // Analytics endpoints (matching web app)
+  // New consolidated analytics endpoints
+  getSummary: (params = {}) => apiClient.get('/analytics/summary/', params),
+  getPerformance: (params = {}) => apiClient.get('/analytics/performance/', params),
+
+  // Legacy endpoints (kept for fallback)
   getOverview: (params = {}) => apiClient.get('/analytics/overview/', params),
   getRevenue: (params = {}) => apiClient.get('/analytics/revenue/', params), 
   getSalesPerformance: (params = {}) => apiClient.get('/analytics/sales-performance/', params),
@@ -10,7 +14,6 @@ export const dashboardService = {
   getProducts: (params = {}) => apiClient.get('/analytics/products/', params),
   getInteractions: (params = {}) => apiClient.get('/analytics/interactions/', params),
   getTeamPerformance: (params = {}) => apiClient.get('/analytics/team-performance/', params),
-  getTrends: (params = {}) => apiClient.get('/analytics/trends/', params),
   getRealtime: () => apiClient.get('/analytics/real-time/'),
 
   // Combined analytics data fetch - UPDATED with graceful error handling
@@ -18,10 +21,34 @@ export const dashboardService = {
     console.log('📊 Fetching dashboard analytics data with params:', params);
     
     try {
-      // FIXED: Sequential API calls to avoid server overload
-      console.log('🔄 Fetching analytics data sequentially...');
+      // First try consolidated endpoints
+      try {
+        console.log('📊 Fetching analytics summary/performance...');
+        const [summaryRes, perfRes] = await Promise.all([
+          dashboardService.getSummary(params),
+          dashboardService.getPerformance(params),
+        ]);
+
+        // Shape into existing structure expected by consumers
+        const shaped = {
+          overview: summaryRes?.overview || summaryRes?.metrics || summaryRes || dashboardService.getDefaultOverviewData(),
+          revenue: summaryRes?.revenue || {},
+          products: summaryRes?.products || {},
+          interactions: summaryRes?.interactions || {},
+          salesPerformance: perfRes?.sales_performance || perfRes?.salesPerformance || {},
+          teamPerformance: perfRes?.team_performance || perfRes?.teamPerformance || {},
+          realtime: summaryRes?.realtime || {},
+        };
+
+        console.log('✅ Analytics summary/performance fetched');
+        return shaped;
+      } catch (e) {
+        console.warn('⚠️ Summary/Performance endpoints failed, falling back to legacy endpoints:', e.message);
+      }
+
+      // Legacy sequential calls as fallback to avoid server overload
+      console.log('🔄 Fetching analytics data sequentially (legacy)...');
       
-      // Fetch core data first (overview and revenue)
       let overviewRes, revenueRes, salesRes, productsRes, teamRes, realtimeRes;
       
       try {
@@ -40,7 +67,6 @@ export const dashboardService = {
         revenueRes = dashboardService.getDefaultRevenueData();
       }
       
-      // Small delay to avoid overwhelming server
       await new Promise(resolve => setTimeout(resolve, 100));
       
       try {
@@ -59,7 +85,6 @@ export const dashboardService = {
         productsRes = dashboardService.getDefaultProductsData();
       }
       
-      // Small delay before final calls
       await new Promise(resolve => setTimeout(resolve, 100));
       
       try {

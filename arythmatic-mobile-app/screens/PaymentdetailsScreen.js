@@ -32,10 +32,16 @@ export default function PaymentDetailsScreen({ route, navigation }) {
     const loadPayment = async () => {
       try {
         setLoading(true);
-        const data = await paymentService.getById(paymentId);
+        const data = await paymentService.getByIdNested(paymentId);
         const p = data?.data || data || {};
+        // Normalize structure uniformly
+        const inv = p.invoice_details || {};
+        const cust = inv.customer_details || {};
+        const prod = inv.line_items?.[0]?.product_details || {};
+        const agent = p.created_by_details || {};
         const amount = parseFloat(p.amount) || 0;
         const currency = p.currency || 'USD';
+        const invoiceNumber = inv.invoiceNumber || inv.invoice_number || p.invoice_number || (p.invoice ? String(p.invoice) : '');
         const normalized = {
           id: p.id || p.transaction_id || paymentId,
           transaction_id: p.transaction_id || p.id || paymentId,
@@ -43,10 +49,15 @@ export default function PaymentDetailsScreen({ route, navigation }) {
           currency,
           amountFormatted: `${currencySymbol(currency)}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           method: p.payment_method || p.paymentMethod || 'N/A',
-          date: p.payment_date || p.created || '',
-          invoice: p.invoice_number || (p.invoice ? String(p.invoice).slice(-8) : 'N/A'),
-          customerId: p.customer?.id || p.customer_id || '',
-          customerName: p.customer?.name || p.customer_name || 'Customer',
+          date: p.payment_date || p.created || p.created_at || '',
+          invoice: invoiceNumber || '—',
+          invoiceStatus: inv.status || '',
+          productLabel: prod.label || '',
+          customerId: p.customer?.id || p.customer_id || cust.id || '',
+          customerName: cust.displayName || p.customer?.name || p.customer_name || 'Customer',
+          customerEmail: cust.contact_details?.emails?.[0]?.email || '',
+          customerPhone: cust.contact_details?.phones?.[0]?.phone || '',
+          salesAgent: agent.name || agent.email || '',
           status: (p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).toLowerCase() : 'Pending'),
           isOverdue: !!p.is_overdue,
           description: p.description || '',
@@ -227,27 +238,65 @@ export default function PaymentDetailsScreen({ route, navigation }) {
         {/* Customer Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Customer Information</Text>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Customer ID</Text>
-            <Text style={styles.infoValue}>{payment.customerId}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Customer Name</Text>
-            <Text style={styles.infoValue}>{payment.customerName}</Text>
-          </View>
+          {payment.customerId ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Customer ID</Text>
+              <Text style={styles.infoValue}>{payment.customerId}</Text>
+            </View>
+          ) : null}
+          {payment.customerName ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Customer Name</Text>
+              <Text style={styles.infoValue}>{payment.customerName}</Text>
+            </View>
+          ) : null}
+          {payment.customerEmail ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{payment.customerEmail}</Text>
+            </View>
+          ) : null}
+          {payment.customerPhone ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Phone</Text>
+              <Text style={styles.infoValue}>{payment.customerPhone}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Invoice Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Invoice Information</Text>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Invoice Number</Text>
-            <Text style={styles.infoValue}>{payment.invoice}</Text>
-          </View>
+          {payment.invoice ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Invoice Number</Text>
+              <Text style={styles.infoValue}>{payment.invoice}</Text>
+            </View>
+          ) : null}
+          {payment.invoiceStatus ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Status</Text>
+              <Text style={styles.infoValue}>{payment.invoiceStatus}</Text>
+            </View>
+          ) : null}
+          {payment.productLabel ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Product</Text>
+              <Text style={styles.infoValue}>{payment.productLabel}</Text>
+            </View>
+          ) : null}
         </View>
+
+        {/* Sales Agent */}
+        {payment.salesAgent ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Sales Agent</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Handled By</Text>
+              <Text style={styles.infoValue}>{payment.salesAgent}</Text>
+            </View>
+          </View>
+        ) : null}
 
         {/* Description */}
         <View style={styles.section}>

@@ -123,6 +123,19 @@ export const handleAxiosError = (error) => {
 };
 
 /**
+ * Generic API error handler wrapper
+ * Decides which parser to use based on error shape
+ */
+export const handleApiError = (error) => {
+  // Axios style
+  if (error?.isAxiosError || error?.response) {
+    return handleAxiosError(error);
+  }
+  // Fetch / generic
+  return handleFetchError(error);
+};
+
+/**
  * Parse error from fetch response
  * @param {Error} error - Fetch error object
  * @returns {ApiError} Standardized API error
@@ -232,6 +245,7 @@ export default {
   handleAxiosError,
   handleFetchError,
   handleQueryError,
+  handleApiError,
   displayError,
   shouldRetry,
   getRetryDelay,
