@@ -82,6 +82,16 @@ export default function Sidebar({
           labelOpacity={labelOpacity}
         />
 
+        {/* LUMI */}
+        <SidebarItem
+          icon="🌙"
+          label="LUMI"
+          active={currentScreen === "LUMI"}
+          onPress={() => handleNavigation("LUMI")}
+          showLabel={menuOpen}
+          labelOpacity={labelOpacity}
+        />
+
         {/* Business group */}
         <BusinessGroup
           menuOpen={menuOpen}

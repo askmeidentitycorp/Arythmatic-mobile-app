@@ -20,11 +20,16 @@ import ProductsScreen from "./screens/ProductScreen";
 import SalesRepsScreen from "./screens/SalesRepsScreen";
 
 import Sidebar from "./components/Sidebar";
+import LumiScreen from "./screens/LumiScreen";
+import LumiConsentModal from "./components/LumiConsentModal";
+import MoodOrb from "./components/MoodOrb";
+import { LumiProvider, useLumi } from './contexts/LumiContext';
 const _React = React; 
 
 // Main App Component (wrapped by AuthProvider)
 const AppContent = () => {
   const { signOut, user, isTestMode, isMSAL } = useAuth();
+  const { asked, consented, grantConsent, declineConsent, listening, currentEmotion } = useLumi();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState("Dashboard");
   const [businessScreen, setBusinessScreen] = useState("SalesReps");
@@ -177,6 +182,12 @@ const AppContent = () => {
                 Home / {currentScreen === "Business" ? businessScreen : currentScreen} / Payment Details
               </Text>
 
+              {consented && (
+                <View style={{ marginRight: 8 }}>
+                  <MoodOrb emotion={currentEmotion?.label} listening={listening} size={12} />
+                </View>
+              )}
+
               {/* Back button */}
               <TouchableOpacity 
                 style={styles.backButton} 
@@ -194,6 +205,8 @@ const AppContent = () => {
               />
             </View>
           </View>
+
+          <LumiConsentModal visible={!asked} onAllow={grantConsent} onDecline={declineConsent} />
           
           {/* Profile Dropdown Overlay */}
           {showProfileDropdown && (
@@ -287,6 +300,12 @@ const AppContent = () => {
               Home / {currentScreen === "Business" ? businessScreen : currentScreen}
             </Text>
 
+            {consented && (
+              <View style={{ marginRight: 8 }}>
+                <MoodOrb emotion={currentEmotion?.label} listening={listening} size={12} />
+              </View>
+            )}
+
             {/* Profile Icon */}
             <TouchableOpacity style={styles.profileBtn} onPress={handleProfilePress}>
               <Text style={styles.profileIcon}>👤</Text>
@@ -296,6 +315,7 @@ const AppContent = () => {
           {/* Screen content */}
           <View style={{ flex: 1 }}>
             {currentScreen === "Dashboard" && <DashboardScreen />}
+            {currentScreen === "LUMI" && <LumiScreen />}
             {currentScreen === "Business" && businessScreen === "SalesReps" && (
               <SalesRepsScreen 
                 navigation={createNavigationProp('SalesReps')} 
@@ -345,6 +365,8 @@ const AppContent = () => {
             )}
           </View>
         </View>
+
+        <LumiConsentModal visible={!asked} onAllow={grantConsent} onDecline={declineConsent} />
         
         {/* Profile Dropdown Overlay */}
         {showProfileDropdown && (
@@ -407,7 +429,9 @@ export default function App() {
     <AuthProvider>
       <SafeAreaProvider>
         <ProtectedRoute>
-          <AppContent />
+          <LumiProvider>
+            <AppContent />
+          </LumiProvider>
         </ProtectedRoute>
       </SafeAreaProvider>
     </AuthProvider>
