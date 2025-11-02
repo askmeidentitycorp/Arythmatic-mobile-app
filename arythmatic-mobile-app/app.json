@@ -7,9 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "extra": {
-      "LUMI_API_BASE": null
-    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
