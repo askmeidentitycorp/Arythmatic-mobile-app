@@ -133,10 +133,10 @@ export const useProductMetrics = () => {
       setError(null);
       const [totalRes, activeRes, digitalRes, physicalRes, serviceRes] = await Promise.all([
         productService.getAll({ page: 1, page_size: 1 }),
-        productService.getAll({ page: 1, page_size: 1, isActive: true }),
-        productService.getAll({ page: 1, page_size: 1, productType: 'digital' }),
-        productService.getAll({ page: 1, page_size: 1, productType: 'physical' }),
-        productService.getAll({ page: 1, page_size: 1, productType: 'service' }),
+        productService.getAll({ page: 1, page_size: 1, is_active: true }),
+        productService.getAll({ page: 1, page_size: 1, product_type: 'digital' }),
+        productService.getAll({ page: 1, page_size: 1, product_type: 'physical' }),
+        productService.getAll({ page: 1, page_size: 1, product_type: 'service' }),
       ]);
       setTotalCount(totalRes?.count || 0);
       setActiveCount(activeRes?.count || 0);

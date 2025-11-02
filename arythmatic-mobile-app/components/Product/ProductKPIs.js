@@ -16,12 +16,15 @@ const ProductKPIs = ({ products, totalCount, activeCount, digitalCount, physical
     console.log('Sample product data:', products[0]);
 
     // FIXED: Count by productType (matching web app logic)
-    const digital = digitalCount ?? products.filter((p) => p.productType === 'digital').length;
-    const physical = physicalCount ?? products.filter((p) => p.productType === 'physical').length;
-    const service = serviceCount ?? products.filter((p) => p.productType === 'service').length;
+    const getType = (p) => (p.productType || p.product_type || '').toLowerCase();
+    const isActiveFn = (p) => (p.isActive !== undefined ? p.isActive : p.is_active === true);
 
-    const active = activeCount ?? products.filter((p) => p.isActive === true).length;
-    const inactive = products.filter((p) => p.isActive === false).length;
+    const digital = digitalCount ?? products.filter((p) => getType(p) === 'digital').length;
+    const physical = physicalCount ?? products.filter((p) => getType(p) === 'physical').length;
+    const service = serviceCount ?? products.filter((p) => getType(p) === 'service').length;
+
+    const active = activeCount ?? products.filter((p) => isActiveFn(p)).length;
+    const inactive = products.filter((p) => !isActiveFn(p)).length;
 
     console.log('Calculated Product Metrics:', {
       total: totalCount,

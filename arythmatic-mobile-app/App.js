@@ -20,6 +20,8 @@ import ProductsScreen from "./screens/ProductScreen";
 import SalesRepsScreen from "./screens/SalesRepsScreen";
 
 import Sidebar from "./components/Sidebar";
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './src/utils/reactQueryClient';
 const _React = React; 
 
 // Main App Component (wrapped by AuthProvider)
@@ -402,15 +404,18 @@ const AppContent = () => {
 };
 
 // Main App with Auth Provider
+
 export default function App() {
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
-        <ProtectedRoute>
-          <AppContent />
-        </ProtectedRoute>
-      </SafeAreaProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <ProtectedRoute>
+            <AppContent />
+          </ProtectedRoute>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

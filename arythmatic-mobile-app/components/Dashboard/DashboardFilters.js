@@ -1,6 +1,6 @@
 // components/Dashboard/DashboardFilters.js
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Modal, Pressable } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
 import { colors } from '../../constants/config';
 
 const SimplePicker = ({ label, value, items, onValueChange }) => {
@@ -76,9 +76,43 @@ const DashboardFilters = ({
   onRefresh,
   loading
 }) => {
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 480;
+
+  if (isMobile) {
+    return (
+      <View style={styles.filterColumn}>
+        <View style={styles.filterBoxFull}>
+          <SimplePicker
+            label="Date Range"
+            value={dateRange}
+            items={dateItems}
+            onValueChange={setDateRange}
+          />
+        </View>
+        <View style={styles.filterBoxFull}>
+          <SimplePicker
+            label="Currency"
+            value={currency}
+            items={currencyItems}
+            onValueChange={setCurrency}
+          />
+        </View>
+        <TouchableOpacity 
+          style={[styles.refreshBtnMobile, loading && styles.refreshBtnDisabled]} 
+          onPress={onRefresh}
+          disabled={loading}
+        >
+          <Text style={styles.refreshTextMobile}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.filterRow}>
-      {/* Currency Selector */}
       <View style={styles.filterBox}>
         <SimplePicker
           label="Currency"
@@ -87,8 +121,6 @@ const DashboardFilters = ({
           onValueChange={setCurrency}
         />
       </View>
-
-      {/* Date Range Selector */}
       <View style={styles.filterBox}>
         <SimplePicker
           label="Date Range"
@@ -97,8 +129,6 @@ const DashboardFilters = ({
           onValueChange={setDateRange}
         />
       </View>
-
-      {/* Refresh Button */}
       <TouchableOpacity 
         style={[styles.refreshBtn, loading && styles.refreshBtnDisabled]} 
         onPress={onRefresh}
@@ -123,10 +153,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: colors.border,
   },
+  filterColumn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
   filterBox: { 
     flexGrow: 1,
     flexBasis: '48%',
     marginRight: 10,
+    marginBottom: 8,
+  },
+  filterBoxFull: {
+    width: '100%',
     marginBottom: 8,
   },
   pickerButton: {
@@ -217,14 +259,26 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 4,
   },
+  refreshBtnMobile: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginTop: 4,
+  },
   refreshBtnDisabled: {
-    backgroundColor: colors.subtext,
     opacity: 0.6,
   },
   refreshText: { 
     color: "#fff", 
     fontSize: 14, 
     fontWeight: "700" 
+  },
+  refreshTextMobile: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
 

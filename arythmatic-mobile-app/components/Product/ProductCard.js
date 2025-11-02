@@ -1,5 +1,6 @@
 // components/Product/ProductCard.js
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
 import { colors } from '../../constants/config';
 
 const Badge = ({ text, tone = "good" }) => {

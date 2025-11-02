@@ -20,6 +20,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 import { usePayments, usePaymentMetrics, usePaymentMutations } from '../hooks/usePayments';
+import { paymentService } from '../services/paymentService';
+import * as FileSystem from 'expo-file-system';
 import DarkPicker from '../components/Customer/DarkPicker';
 import CustomerPagination from '../components/Customer/CustomerPagination';
 
@@ -137,7 +139,7 @@ const PaymentCard = React.memo(({ payment, onNext }) => {
               <Text style={[styles.paymentTagText, { color: '#6B9AFF' }]}>Online</Text>
             </View>
             <View style={[styles.paymentTag, { backgroundColor: 'rgba(107, 154, 255, 0.15)', borderColor: '#6B9AFF' }]}>
-              <Text style={[styles.paymentTagText, { color: '#6B9AFF' }]}>USD</Text>
+              <Text style={[styles.paymentTagText, { color: '#6B9AFF' }]}>{(payment.currency || 'USD').toUpperCase()}</Text>
             </View>
             <StatusBadge status={payment.status} />
           </View>
@@ -421,40 +423,67 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   /* ---------- Export Payments to CSV ---------- */
   const handleExport = useCallback(async () => {
     try {
-      // Create CSV header
-      const header = 'Transaction ID,Customer Name,Amount,Currency,Status,Payment Method,Invoice,Payment Date\n';
-      
-      // Create CSV rows from filtered payments
-      const rows = filteredPayments.map(payment => {
-        const transactionId = payment.transaction_id || payment.id || 'N/A';
-        const customerName = (payment.customerName || 'Unknown').replace(/,/g, ' '); // Remove commas
-        const amount = parseFloat(payment.amount || 0).toFixed(2);
-        const currency = payment.currency || 'USD';
-        const status = payment.status || 'Pending';
-        const method = (payment.payment_method || 'N/A').replace(/,/g, ' ');
-        const invoice = (payment.invoice_number || 'N/A').replace(/,/g, ' ');
-        const date = payment.payment_date || payment.created || 'N/A';
-        
-        return `${transactionId},${customerName},${amount},${currency},${status},${method},${invoice},${date}`;
-      }).join('\n');
-      
-      // Combine header and rows
-      const csvContent = header + rows;
-      
-      // Add summary at the end
-      const summary = `\n\nSummary\nTotal Payments,${metrics.total}\nTotal Value,${metrics.totalValue}\nSuccessful,${metrics.successful}\nFailed/Voided,${metrics.failed}`;
-      const fullContent = csvContent + summary;
-      
-      // Share the CSV content
-      await Share.share({
-        message: fullContent,
-        title: 'Payment Export',
-      });
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await paymentService.getAll({ page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+
+      const headers = ['transaction_id','customer_name','amount','currency','status','payment_method','invoice_number','payment_date'];
+      const csv = [headers.join(',')].concat(
+        rows.map(p => {
+          const row = {
+            transaction_id: p.transaction_id || p.id || '',
+            customer_name: p.customer_details?.displayName || p.customer_name || '',
+            amount: parseFloat(p.amount || 0).toFixed(2),
+            currency: (p.currency || 'USD').toUpperCase(),
+            status: (p.status || '').toString(),
+            payment_method: p.payment_method || p.paymentMethod || '',
+            invoice_number: p.invoice_details?.invoiceNumber || p.invoice_number || '',
+            payment_date: p.payment_date || p.created_at || p.created || '',
+          };
+          return headers.map(h => JSON.stringify(String(row[h] ?? ''))).join(',');
+        })
+      ).join('\n');
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.setAttribute('download', 'payments.csv');
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `payments_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) throw new Error('Storage permission not granted. Export cancelled.');
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
+      } else {
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `payments_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
+      }
     } catch (error) {
       console.error('Export error:', error);
-      Alert.alert('Export Failed', 'Unable to export payments. Please try again.');
+      Alert.alert('Export Failed', error.message || 'Unable to export payments. Please try again.');
     }
-  }, [filteredPayments, metrics]);
+  }, [metrics]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

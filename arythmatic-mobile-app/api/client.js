@@ -15,11 +15,13 @@
  */
 
 import axios from 'axios';
-import { secureStorage, StorageKeys } from '../utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/authConfig';
 import { handleAxiosError } from '../utils/errorHandler';
+import Constants from 'expo-constants';
 
 // API Configuration
-const API_BASE_URL = 'https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1';
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1';
 
 /**
  * Create axios instance with base configuration
@@ -40,8 +42,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      // Get token from secure storage
-      const token = await secureStorage.getItem(StorageKeys.ACCESS_TOKEN);
+      // Get token from global auth storage (single source of truth)
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       
       if (token) {
         // DRF uses "Token" prefix for token authentication
@@ -117,8 +119,8 @@ apiClient.interceptors.response.use(
           }
         } catch (refreshError) {
           // Refresh failed - clear tokens and redirect to login
-          await secureStorage.removeItem(StorageKeys.ACCESS_TOKEN);
-          await secureStorage.removeItem(StorageKeys.REFRESH_TOKEN);
+          await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
           
           // You can emit an event here to trigger logout in AuthContext
           // eventEmitter.emit('auth:logout');
@@ -129,7 +131,7 @@ apiClient.interceptors.response.use(
       */
 
       // For now, just clear invalid token
-      await secureStorage.removeItem(StorageKeys.ACCESS_TOKEN);
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     }
 
     // Convert to standardized error

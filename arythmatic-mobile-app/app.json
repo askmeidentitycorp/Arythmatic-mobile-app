@@ -25,6 +25,9 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "API_BASE_URL": "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1"
+    },
     "description": "github.com/AnilChettri/Sales-Tracker @ Sep 3, 2025"
   }
 }

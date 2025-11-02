@@ -7,7 +7,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Platform,
 } from 'react-native';
 import { colors } from '../constants/config';
 
@@ -24,6 +25,8 @@ import {
   useProducts,
   useProductMetrics
 } from '../hooks/useProducts';
+import { productService } from '../services/productService';
+import * as FileSystem from 'expo-file-system';
 
 export default function ProductScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,11 +52,11 @@ export default function ProductScreen({ navigation }) {
       }
       
       if (filters.productType) {
-        params.productType = filters.productType;
+        params.product_type = filters.productType;
       }
       
       if (filters.isActive !== null) {
-        params.isActive = filters.isActive;
+        params.is_active = filters.isActive;
       }
 
       setSearchParams(params);
@@ -70,7 +73,7 @@ export default function ProductScreen({ navigation }) {
     pagination,
     refresh,
     goToPage,
-} = useProducts(searchParams, 10, false);
+} = useProducts(searchParams, 10, true);
 
   const { totalCount: totals, activeCount, digitalCount, physicalCount, serviceCount } = useProductMetrics();
 
@@ -243,7 +246,7 @@ export default function ProductScreen({ navigation }) {
       const csv = [headers.join(',')].concat(
         rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
       ).join('\n');
-      const { Platform, Share } = await import('react-native');
+
       if (Platform.OS === 'web') {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -251,8 +254,26 @@ export default function ProductScreen({ navigation }) {
         link.href = url; link.setAttribute('download', 'products.csv');
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `products_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) throw new Error('Storage permission not granted. Export cancelled.');
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
       } else {
-        await Share.share({ title: 'Products CSV', message: csv });
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `products_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
       }
     } catch (e) {
       Alert.alert('Export Failed', e.message || 'Could not export CSV');

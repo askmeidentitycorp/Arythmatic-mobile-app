@@ -3,8 +3,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConfig';
 import { handleFetchError, ApiError } from '../utils/errorHandler';
+import Constants from 'expo-constants';
 
-const BASE_URL = "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
+const BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
 
 class ApiClient {
   constructor() {

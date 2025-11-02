@@ -27,6 +27,8 @@ import InvoiceKPIs from '../components/Invoice/InvoiceKPIs';
 import InvoiceSearchAndFilters from '../components/Invoice/InvoiceSearchAndFilters';
 import { useInvoiceMutations, useInvoices } from '../hooks/useInvoices';
 import { customerService } from '../services/customerService';
+import { invoiceService } from '../services/invoiceService';
+import * as FileSystem from 'expo-file-system';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -98,16 +100,21 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
   // Debounce search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const params = {
-        search: searchQuery,
-        ...filters,
-      };
+      const params = { search: searchQuery };
+
+      // Map status values to API-expected ones
+      if (filters.status) {
+        const statusMap = { paid: 'full_paid', void: 'cancelled' };
+        params.status = statusMap[filters.status] || filters.status;
+      }
+      if (filters.currency) params.currency = filters.currency;
+
       if (customerFilter) params.customer = customerFilter.id;
       setSearchParams(params);
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, customerFilter]);
 
   // API hooks - FIXED: Added hasMore to destructuring
   const { 
@@ -209,45 +216,73 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     setOpenActionsId(null);
   };
 
-  // Export CSV handler
-  const handleExportCSV = () => {
+  // Export CSV handler - downloads file per platform
+  const handleExportCSV = async () => {
     try {
-      const csvHeader = "Invoice Number,Customer,Status,Currency,Due Date,Payment Terms,Subtotal,Tax,Total,Created,Updated\n";
-      
-      const csvRows = invoices.map(inv => {
-        const invoiceNumber = inv.invoiceNumber || inv.invoice_number || "—";
-        const customerName = inv.customer_details?.displayName || 
-                            inv.customer_details?.firstName + ' ' + (inv.customer_details?.lastname || '') ||
-                            inv.customer_details?.name || 
-                            inv.customer || "Unknown";
-        const status = inv.status || "draft";
-        const currency = inv.currency || "USD";
-        const dueDate = inv.dueDate || inv.due_date || "—";
-        const paymentTerms = inv.paymentTerms || inv.payment_terms || "—";
-        const subtotal = inv.subtotal || inv.sub_total || 0;
-        const taxAmount = inv.taxAmount || inv.tax_amount || 0;
-        const totalAmount = inv.totalAmount || inv.total_amount || inv.grossAmount || inv.gross_amount || 0;
-        const created = inv.created_at || "—";
-        const updated = inv.updated_at || "—";
-        
-        return `${invoiceNumber},${customerName},${status},${currency},${dueDate},${paymentTerms},${subtotal},${taxAmount},${totalAmount},${created},${updated}`;
-      }).join("\n");
-      
-      const csvContent = csvHeader + csvRows;
-      
-      // For now, log the CSV. In a real app, you'd use react-native-share or similar
-      console.log("CSV Export:", csvContent);
-      Alert.alert(
-        "Export Ready", 
-        `Generated CSV with ${invoices.length} invoices.\n\nIn production, this would download as a file.`,
-        [
-          { text: "OK" },
-          { text: "Copy to Clipboard", onPress: () => console.log("Copy CSV:", csvContent) }
-        ]
-      );
+      const pageSize = 200;
+      let page = 1;
+      let rows = [];
+      while (true) {
+        const res = await invoiceService.getAll({ ...searchParams, page, page_size: pageSize });
+        const list = res?.results || res || [];
+        rows = rows.concat(list);
+        if (!res?.next || list.length === 0) break;
+        page += 1;
+      }
+
+      const headers = ['invoice_number','customer','status','currency','due_date','payment_terms','sub_total','tax_amount','total_amount','created_at','updated_at'];
+      const csv = [headers.join(',')].concat(
+        rows.map(inv => {
+          const row = {
+            invoice_number: inv.invoiceNumber || inv.invoice_number || '',
+            customer: inv.customer_details?.displayName || inv.customer || '',
+            status: inv.status || '',
+            currency: inv.currency || '',
+            due_date: inv.dueDate || inv.due_date || '',
+            payment_terms: inv.paymentTerms || inv.payment_terms || '',
+            sub_total: inv.subtotal || inv.sub_total || 0,
+            tax_amount: inv.taxAmount || inv.tax_amount || 0,
+            total_amount: inv.totalAmount || inv.total_amount || inv.grossAmount || inv.gross_amount || 0,
+            created_at: inv.created_at || '',
+            updated_at: inv.updated_at || '',
+          };
+          return headers.map(h => JSON.stringify(String(row[h] ?? ''))).join(',');
+        })
+      ).join('\n');
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'invoices.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `invoices_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) throw new Error('Storage permission not granted. Export cancelled.');
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
+      } else {
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `invoices_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
+      }
     } catch (error) {
-      Alert.alert("Export Failed", "Could not generate CSV file");
-      console.error("Export error:", error);
+      Alert.alert('Export Failed', error.message || 'Could not export CSV');
     }
   };
 
