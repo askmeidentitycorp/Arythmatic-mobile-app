@@ -27,7 +27,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const CustomerCard = ({ customer, onActionPress }) => {
+const CustomerCard = ({ customer, onActionPress, onAction }) => {
   const [expanded, setExpanded] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("Basic Information");
@@ -57,7 +57,10 @@ const CustomerCard = ({ customer, onActionPress }) => {
   };
 
   const handleAction = (action) => {
-    onActionPress(customer, action);
+    const handler = onActionPress || onAction;
+    if (typeof handler === 'function') {
+      handler(customer, action);
+    }
     setActionsVisible(false);
   };
 

@@ -1,6 +1,6 @@
 // hooks/useProductsQuery.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as ProductAPI from '../api/productService';
+import { productService } from '../services/productService';
 import { handleQueryError } from '../utils/errorHandler';
 
 export const productKeys = {
@@ -14,7 +14,7 @@ export const productKeys = {
 export const useProducts = (params = {}, options = {}) => {
   return useQuery({
     queryKey: productKeys.list(params),
-    queryFn: () => ProductAPI.getProducts(params),
+queryFn: () => productService.getAll(params),
     onError: handleQueryError,
     ...options,
   });
@@ -23,7 +23,7 @@ export const useProducts = (params = {}, options = {}) => {
 export const useProduct = (id, options = {}) => {
   return useQuery({
     queryKey: productKeys.detail(id),
-    queryFn: () => ProductAPI.getProductById(id),
+queryFn: () => productService.getById(id),
     enabled: !!id,
     onError: handleQueryError,
     ...options,
@@ -34,7 +34,7 @@ export const useCreateProduct = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ProductAPI.createProduct,
+mutationFn: (data) => productService.create(data),
     onSuccess: () => queryClient.invalidateQueries(productKeys.lists()),
     onError: handleQueryError,
     ...options,
@@ -45,7 +45,7 @@ export const useUpdateProduct = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => ProductAPI.updateProduct(id, data),
+mutationFn: ({ id, data }) => productService.update(id, data),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(productKeys.detail(variables.id), data);
       queryClient.invalidateQueries(productKeys.lists());
@@ -59,7 +59,7 @@ export const useDeleteProduct = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ProductAPI.deleteProduct,
+mutationFn: (id) => productService.delete(id),
     onSuccess: (data, id) => {
       queryClient.removeQueries(productKeys.detail(id));
       queryClient.invalidateQueries(productKeys.lists());

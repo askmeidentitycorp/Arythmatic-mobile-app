@@ -1,4 +1,7 @@
-// api/customerService.js
+// DEPRECATED: api/customerService.js
+// Forwarding exports to services/customerService to avoid duplication.
+export * from '../services/customerService';
+export { customerService as default } from '../services/customerService';
 /**
  * Customer Service
  * CRUD operations for customers

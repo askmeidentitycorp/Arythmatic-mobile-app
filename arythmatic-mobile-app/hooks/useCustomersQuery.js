@@ -10,7 +10,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as CustomerAPI from '../api/customerService';
+import { customerService } from '../services/customerService';
 import { handleQueryError } from '../utils/errorHandler';
 
 // Query keys for cache management
@@ -33,7 +33,7 @@ export const customerKeys = {
 export const useCustomers = (params = {}, options = {}) => {
   return useQuery({
     queryKey: customerKeys.list(params),
-    queryFn: () => CustomerAPI.getCustomers(params),
+queryFn: () => customerService.getAll(params),
     onError: (error) => handleQueryError(error),
     ...options,
   });
@@ -47,7 +47,7 @@ export const useCustomers = (params = {}, options = {}) => {
 export const useCustomersNested = (params = {}, options = {}) => {
   return useQuery({
     queryKey: customerKeys.nestedList(params),
-    queryFn: () => CustomerAPI.getCustomersNested(params),
+queryFn: () => customerService.getAllNested(params),
     onError: (error) => handleQueryError(error),
     ...options,
   });
@@ -61,7 +61,7 @@ export const useCustomersNested = (params = {}, options = {}) => {
 export const useCustomer = (id, options = {}) => {
   return useQuery({
     queryKey: customerKeys.detail(id),
-    queryFn: () => CustomerAPI.getCustomerById(id),
+queryFn: () => customerService.getById(id),
     enabled: !!id, // Only run if ID exists
     onError: (error) => handleQueryError(error),
     ...options,
@@ -76,7 +76,7 @@ export const useCustomer = (id, options = {}) => {
 export const useCustomerNested = (id, options = {}) => {
   return useQuery({
     queryKey: customerKeys.nestedDetail(id),
-    queryFn: () => CustomerAPI.getCustomerByIdNested(id),
+queryFn: () => customerService.getByIdNested(id),
     enabled: !!id,
     onError: (error) => handleQueryError(error),
     ...options,
@@ -91,7 +91,7 @@ export const useCreateCustomer = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (customerData) => CustomerAPI.createCustomer(customerData),
+mutationFn: (customerData) => customerService.create(customerData),
     onSuccess: (data) => {
       // Invalidate customer lists to trigger refetch
       queryClient.invalidateQueries(customerKeys.lists());
@@ -115,7 +115,7 @@ export const useCreateCustomerNested = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (customerData) => CustomerAPI.createCustomerNested(customerData),
+mutationFn: (customerData) => customerService.createNested(customerData),
     onSuccess: (data) => {
       queryClient.invalidateQueries(customerKeys.nested());
       
@@ -138,7 +138,7 @@ export const useUpdateCustomer = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => CustomerAPI.updateCustomer(id, data),
+mutationFn: ({ id, data }) => customerService.update(id, data),
     onSuccess: (data, variables) => {
       // Update cache for this specific customer
       queryClient.setQueryData(customerKeys.detail(variables.id), data);
@@ -165,7 +165,7 @@ export const usePatchCustomer = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, updates }) => CustomerAPI.patchCustomer(id, updates),
+mutationFn: ({ id, updates }) => customerService.updatePartial(id, updates),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(customerKeys.detail(variables.id), data);
       queryClient.invalidateQueries(customerKeys.lists());
@@ -189,7 +189,7 @@ export const useDeleteCustomer = (options = {}) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id) => CustomerAPI.deleteCustomer(id),
+mutationFn: (id) => customerService.delete(id),
     onSuccess: (data, id) => {
       // Remove from cache
       queryClient.removeQueries(customerKeys.detail(id));

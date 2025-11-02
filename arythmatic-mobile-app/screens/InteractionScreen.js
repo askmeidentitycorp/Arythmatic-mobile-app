@@ -1,5 +1,5 @@
 // screens/InteractionScreen.js
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,8 +24,11 @@ import InteractionCard from '../components/Interaction/InteractionCard';
 import InteractionHeader from '../components/Interaction/InteractionHeader';
 import InteractionKPIs from '../components/Interaction/InteractionKPIs';
 import InteractionSearchAndFilters from '../components/Interaction/InteractionSearchAndFilters';
-import { useInteractionMutations, useInteractions } from '../hooks/useInteractions';
+import { useInteractionMutations, useInteractions, useInteractionMetrics } from '../hooks/useInteractions';
 import { customerService } from '../services/customerService';
+import { interactionService } from '../services/interactionService';
+import { productService } from '../services/productService';
+import * as FileSystem from 'expo-file-system';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -50,7 +53,7 @@ const LabeledInput = ({ label, value, onChangeText, placeholder, multiline, ...r
 
 export default function InteractionScreen({ navigation, onBack, initialRepId, initialRepName, initialCustomerId, initialCustomerName }) {
   const [nameCache, setNameCache] = useState({});
-  const fetchingIdsRef = React.useRef(new Set());
+  const fetchingIdsRef = useRef(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -319,7 +322,7 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
       const csv = [headers.join(',')].concat(
         rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
       ).join('\n');
-      const { Platform, Share } = await import('react-native');
+
       if (Platform.OS === 'web') {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -327,8 +330,26 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
         link.href = url; link.setAttribute('download', 'interactions.csv');
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `interactions_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) throw new Error('Storage permission not granted. Export cancelled.');
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
       } else {
-        await Share.share({ title: 'Interactions CSV', message: csv });
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `interactions_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
       }
     } catch (e) {
       Alert.alert('Export Failed', e.message || 'Could not export CSV');
@@ -488,16 +509,16 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
           })
         )}
 
-       <CustomerPagination
-  currentPage={pagination.currentPage}
-  totalPages={pagination.totalPages}
-  totalCount={pagination.totalCount}
-  pageSize={20}
-  hasNext={pagination.hasNext}
-  hasPrevious={pagination.hasPrevious}
-  onPageChange={goToPage}
-  loading={loading}
-/>
+        <CustomerPagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalCount={pagination.totalCount}
+          pageSize={pagination.pageSize}
+          hasNext={pagination.hasNext}
+          hasPrevious={pagination.hasPrevious}
+          onPageChange={goToPage}
+          loading={loading}
+        />
       </ScrollView>
       
       {/* Manage Notes Modal */}

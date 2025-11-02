@@ -7,7 +7,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Platform,
 } from 'react-native';
 import { colors } from '../constants/config';
 
@@ -18,6 +19,8 @@ import SalesRepCard from '../components/SalesRep/SalesRepCard';
 import SalesRepHeader from '../components/SalesRep/SalesRepHeader';
 import SalesRepKPIs from '../components/SalesRep/SalesRepKPIs';
 import SalesRepSearchAndFilters from '../components/SalesRep/SalesRepSearchAndFilters';
+import { salesRepService } from '../services/salesRepService';
+import * as FileSystem from 'expo-file-system';
 
 import {
   useSalesRepMetrics,
@@ -301,8 +304,7 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
       ).join('\n');
 
-      // Download on web; share as text on native
-      const { Platform, Share } = await import('react-native');
+      // Download behavior per platform
       if (Platform.OS === 'web') {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -313,8 +315,29 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `sales_reps_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) {
+          throw new Error('Storage permission not granted. Export cancelled.');
+        }
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
       } else {
-        await Share.share({ title: 'Sales Reps CSV', message: csv });
+        // iOS fallback: prompt user to save via Files using share sheet
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `sales_reps_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
       }
     } catch (e) {
       Alert.alert('Export Failed', e.message || 'Could not export CSV');

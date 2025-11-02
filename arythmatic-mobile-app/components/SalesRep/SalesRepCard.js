@@ -59,11 +59,18 @@ const SalesRepCard = ({ salesRep, onAction }) => {
   const name = salesRep.name || `${salesRep.firstName || ''} ${salesRep.lastName || ''}`.trim();
   const email = salesRep.email || "—";
   const employeeId = salesRep.employeeId || salesRep.employee_id || "—";
-  const status = salesRep.status || "active";
+  const status = salesRep.status || (salesRep.is_active ? 'active' : 'inactive') || "active";
   const role = salesRep.role || "sales_agent";
   
   // Format role for display
-  const displayRole = role === "sales_agent" ? "Sales Agent" : "Admin";
+  const roleLabelMap = {
+    sales_agent: 'Sales Agent',
+    admin: 'Admin',
+    sales_manager: 'Sales Manager',
+    senior_sales_rep: 'Senior Sales Rep',
+    account_manager: 'Account Manager',
+  };
+  const displayRole = roleLabelMap[role] || (role ? role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Sales Agent');
   const permissions = role === "admin" ? "Full Access" : "Sales Access";
 
   useEffect(() => {
@@ -152,28 +159,32 @@ const SalesRepCard = ({ salesRep, onAction }) => {
       {/* Actions Menu */}
       {actionsVisible && (
         <Animated.View style={[styles.actionsMenu, { opacity: actionsMenuAnim }]}>
-          {[
-            "View Details",
-            "Edit Sales Rep",
-            "View Performance",
-            "Show Invoices",
-            "Show Interactions",
-            "Deactivate",
-            "Delete",
-          ].map((action, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.actionRow}
-              onPress={() => handleAction(action)}
-            >
-              <Text style={[
-                styles.actionText, 
-                action === "Delete" && { color: "red" }
-              ]}>
-                {action}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(() => {
+            const isActive = status === 'active' || salesRep.is_active === true;
+            const actions = [
+              "View Details",
+              "Edit Sales Rep",
+              "View Performance",
+              "Show Invoices",
+              "Show Interactions",
+              isActive ? "Deactivate" : "Activate",
+              "Delete",
+            ];
+            return actions.map((action, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.actionRow}
+                onPress={() => handleAction(action)}
+              >
+                <Text style={[
+                  styles.actionText, 
+                  action === "Delete" && { color: "red" }
+                ]}>
+                  {action}
+                </Text>
+              </TouchableOpacity>
+            ));
+          })()}
         </Animated.View>
       )}
     </View>

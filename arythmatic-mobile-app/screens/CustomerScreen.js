@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomerCard from '../components/Customer/CustomerCard';
@@ -19,6 +20,8 @@ import CustomerSearchAndFilters from '../components/Customer/CustomerSearchAndFi
 import CrudModal from '../components/CrudModal';
 import { colors } from '../constants/config';
 import { useCustomerMutations, useCustomers, useCustomerMetrics } from '../hooks/useCustomers';
+import { customerService } from '../services/customerService';
+import * as FileSystem from 'expo-file-system';
 
 export default function CustomerScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,10 +39,18 @@ export default function CustomerScreen({ navigation }) {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setSearchParams({
-        search: searchQuery,
-        ...filters,
-      });
+      const params = {};
+      if (searchQuery) params.search = searchQuery;
+
+      // Map filters to API params
+      if (filters.type) params.type = filters.type; // e.g., 'Individual' | 'Business'
+      if (filters.countryCode) params.country_code = filters.countryCode;
+      if (filters.status) {
+        // Backend uses is_deleted to represent inactive
+        params.is_deleted = filters.status === 'Inactive';
+      }
+
+      setSearchParams(params);
     }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filters]);
@@ -244,7 +255,6 @@ export default function CustomerScreen({ navigation }) {
         rows.map(r => headers.map(h => JSON.stringify((r[h] ?? '').toString())).join(','))
       ).join('\n');
 
-      const { Platform, Share } = await import('react-native');
       if (Platform.OS === 'web') {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -255,8 +265,26 @@ export default function CustomerScreen({ navigation }) {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        const filename = `customers_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) throw new Error('Storage permission not granted. Export cancelled.');
+        const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          'text/csv'
+        );
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        Alert.alert('Export complete', `Saved as ${filename}`);
       } else {
-        await Share.share({ title: 'Customers CSV', message: csv });
+        const Sharing = await import('expo-sharing');
+        const fileUri = FileSystem.cacheDirectory + `customers_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export CSV' });
+        } else {
+          Alert.alert('Export complete', `Saved to temporary file: ${fileUri}`);
+        }
       }
     } catch (e) {
       Alert.alert('Export Failed', e.message || 'Could not export CSV');
@@ -392,7 +420,7 @@ export default function CustomerScreen({ navigation }) {
           currentPage={pagination.currentPage}
           totalPages={pagination.totalPages}
           totalCount={pagination.totalCount}
-          pageSize={20}
+          pageSize={10}
           hasNext={pagination.hasNext}
           hasPrevious={pagination.hasPrevious}
           onPageChange={goToPage}
