@@ -355,4 +355,5 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 ---
 
-**Built with ❤️ by the Arythmatic Team**
+
+
