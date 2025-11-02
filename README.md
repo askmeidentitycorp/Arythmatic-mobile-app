@@ -327,27 +327,7 @@ cd android
 cd ..
 ```
 
-## 📄 License
 
-Proprietary - All rights reserved
-
-## 👥 Contributors
-
-- Development Team at Arythmatic
-
-## 📞 Support
-
-For support, email support@arythmatic.com or open an issue in the repository.
-
-## 🗺️ Roadmap
-
-- [ ] Push notifications
-- [ ] Offline mode with sync
-- [ ] Dark/Light theme toggle
-- [ ] Advanced reporting
-- [ ] Biometric authentication
-- [ ] Multi-language support
-- [ ] Real-time collaboration
 
 ## 📝 Changelog
 
