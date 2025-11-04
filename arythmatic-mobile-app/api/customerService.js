@@ -133,18 +133,3 @@ export const deleteCustomer = async (id) => {
 export const deleteCustomerNested = async (id) => {
   return await del(`/customers-nested/${id}/`);
 };
-
-export default {
-  getCustomers,
-  getCustomersNested,
-  getCustomerById,
-  getCustomerByIdNested,
-  createCustomer,
-  createCustomerNested,
-  updateCustomer,
-  updateCustomerNested,
-  patchCustomer,
-  patchCustomerNested,
-  deleteCustomer,
-  deleteCustomerNested,
-};
