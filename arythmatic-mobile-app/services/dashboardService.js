@@ -31,7 +31,7 @@ export const dashboardService = {
 
         // Shape into existing structure expected by consumers
         const shaped = {
-          overview: summaryRes?.overview || summaryRes?.metrics || summaryRes || dashboardService.getDefaultOverviewData(),
+          overview: summaryRes?.overview || summaryRes?.metrics || summaryRes || {},
           revenue: summaryRes?.revenue || {},
           products: summaryRes?.products || {},
           interactions: summaryRes?.interactions || {},
@@ -56,7 +56,7 @@ export const dashboardService = {
         console.log('✅ Overview data fetched');
       } catch (err) {
         console.warn('⚠️ Overview API failed:', err.message);
-        overviewRes = dashboardService.getDefaultOverviewData();
+        overviewRes = {};
       }
       
       try {
@@ -64,7 +64,7 @@ export const dashboardService = {
         console.log('✅ Revenue data fetched');
       } catch (err) {
         console.warn('⚠️ Revenue API failed:', err.message);
-        revenueRes = dashboardService.getDefaultRevenueData();
+        revenueRes = {};
       }
       
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -74,7 +74,7 @@ export const dashboardService = {
         console.log('✅ Sales performance data fetched');
       } catch (err) {
         console.warn('⚠️ Sales performance API failed:', err.message);
-        salesRes = dashboardService.getDefaultSalesData();
+        salesRes = {};
       }
       
       try {
@@ -82,7 +82,7 @@ export const dashboardService = {
         console.log('✅ Products data fetched');
       } catch (err) {
         console.warn('⚠️ Products API failed:', err.message);
-        productsRes = dashboardService.getDefaultProductsData();
+        productsRes = {};
       }
       
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -92,7 +92,7 @@ export const dashboardService = {
         console.log('✅ Team performance data fetched');
       } catch (err) {
         console.warn('⚠️ Team performance API failed:', err.message);
-        teamRes = dashboardService.getDefaultTeamData();
+        teamRes = {};
       }
       
       try {
@@ -100,7 +100,7 @@ export const dashboardService = {
         console.log('✅ Realtime data fetched');
       } catch (err) {
         console.warn('⚠️ Realtime API failed:', err.message);
-        realtimeRes = dashboardService.getDefaultRealtimeData();
+        realtimeRes = {};
       }
 
       console.log('✅ Dashboard data fetched successfully (with fallbacks if needed)');
@@ -115,16 +115,11 @@ export const dashboardService = {
       };
     } catch (error) {
       console.error('❌ Critical error in dashboard data fetch:', error);
-      // Return complete fallback data in development; otherwise rethrow
-      if (__DEV__) {
-        return dashboardService.getCompleteFallbackData();
-      }
+      // Do not return mock data; propagate error
       throw error;
     }
   },
 
-  // Fallback data methods
-  getDefaultOverviewData: () => ({
     metrics: {
       sales: { current: 125, growth: 15.2 },
       customers: { active: 89, new: 12 },
@@ -135,7 +130,6 @@ export const dashboardService = {
     last_updated: new Date().toISOString()
   }),
 
-  getDefaultRevenueData: () => ({
     total_sales_count: 125,
     summary_by_currency: {
       USD: { total_revenue: 45750, sales_count: 85 },
@@ -148,33 +142,28 @@ export const dashboardService = {
     ]
   }),
 
-  getDefaultSalesData: () => ({
     by_sales_rep: [
       { id: 1, name: 'John Smith', revenue_by_currency: { USD: { revenue: 25400 } }, total_deals: 45, overall_win_rate: 78 },
       { id: 2, name: 'Sarah Johnson', revenue_by_currency: { USD: { revenue: 20300 } }, total_deals: 38, overall_win_rate: 82 }
     ]
   }),
 
-  getDefaultProductsData: () => ({
     top_products_by_currency: [
       { id: 1, name: 'Premium Service', revenue_by_currency: { USD: 15600 }, total_revenue: 15600 },
       { id: 2, name: 'Basic Package', revenue_by_currency: { USD: 12400 }, total_revenue: 12400 }
     ]
   }),
 
-  getDefaultTeamData: () => ({
     summary: { average_completion_rate: 85.2 },
     by_member: []
   }),
 
-  getDefaultRealtimeData: () => ({
     recent_activities: [
       { id: 1, description: 'New customer registered', user: 'System', timestamp: new Date(Date.now() - 300000).toISOString() },
       { id: 2, description: 'Payment processed', customer: 'John Doe', timestamp: new Date(Date.now() - 600000).toISOString() }
     ]
   }),
 
-  getCompleteFallbackData: () => ({
     overview: dashboardService.getDefaultOverviewData(),
     revenue: dashboardService.getDefaultRevenueData(),
     salesPerformance: dashboardService.getDefaultSalesData(),

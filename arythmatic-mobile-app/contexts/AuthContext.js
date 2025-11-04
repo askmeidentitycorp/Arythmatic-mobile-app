@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useReducer, useCallback } 
 import authController from '../services/authController';
 import apiClient from '../services/apiClient';
 import { AUTH_PROVIDER } from '../constants/authConfig';
+import { subscribeUnauthorized } from '../utils/authEvents';
 
 /**
  * Auth Context
@@ -283,10 +284,15 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AuthActionTypes.CLEAR_ERROR });
   }, []);
 
-  // Initialize on mount
+  // Initialize on mount and subscribe to unauthorized events
   useEffect(() => {
     initialize();
-  }, [initialize]);
+    const unsubscribe = subscribeUnauthorized(() => {
+      // Force sign-out on 401 from anywhere
+      signOut().catch(() => {});
+    });
+    return unsubscribe;
+  }, [initialize, signOut]);
 
   // Context value
   const value = {

@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConfig';
 import { handleAxiosError } from '../utils/errorHandler';
 import Constants from 'expo-constants';
+import { emitUnauthorized } from '../utils/authEvents';
 
 // API Configuration
 const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1';
@@ -130,8 +131,9 @@ apiClient.interceptors.response.use(
       }
       */
 
-      // For now, just clear invalid token
+      // For now, clear invalid token and notify auth context
       await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      emitUnauthorized('401');
     }
 
     // Convert to standardized error

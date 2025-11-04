@@ -29,6 +29,9 @@ import { useInvoiceMutations, useInvoices } from '../hooks/useInvoices';
 import { customerService } from '../services/customerService';
 import { invoiceService } from '../services/invoiceService';
 import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/authConfig';
+import { BASE_URL } from '../services/apiClient';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -358,12 +361,11 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
               text: "Send",
               onPress: async () => {
                 try {
-                  // In production, call invoiceService.sendInvoice(invoice.id)
-                  await updateInvoice(invoice.id, { status: "sent" }, false, true);
+                  await invoiceService.sendInvoice(invoice.id);
                   refresh();
                   Alert.alert("Success", "Invoice sent successfully");
                 } catch (error) {
-                  Alert.alert("Error", "Failed to send invoice");
+                  Alert.alert("Error", error.message || "Failed to send invoice");
                 }
               },
             },
@@ -382,11 +384,15 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
           "Mark as Void": "cancelled",
         };
         try {
-          await updateInvoice(invoice.id, { status: statusMap[action] }, false, true);
+          if (action === 'Mark as Paid') {
+            await invoiceService.markAsPaid(invoice.id);
+          } else {
+            await updateInvoice(invoice.id, { status: statusMap[action] }, false, true);
+          }
           refresh();
           Alert.alert("Success", `Invoice status updated to ${statusMap[action]}`);
         } catch (error) {
-          Alert.alert("Error", "Failed to update invoice status");
+          Alert.alert("Error", error.message || "Failed to update invoice status");
         }
         break;
 
@@ -418,11 +424,19 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
               text: "Generate",
               onPress: async () => {
                 try {
-                  // In production, call invoiceService.generatePDF(invoice.id)
-                  console.log("Generating PDF for invoice:", invoice.id);
-                  Alert.alert("Success", "PDF generated successfully (production feature)");
+                  const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+                  const url = `${BASE_URL}/invoices/${invoice.id}/pdf/`;
+                  const fileUri = `${FileSystem.cacheDirectory}invoice_${invoice.id}.pdf`;
+                  const result = await FileSystem.downloadAsync(url, fileUri, {
+                    headers: token ? { Authorization: `Token ${token}` } : {},
+                  });
+                  if (result?.status === 200) {
+                    Alert.alert('Download complete', `Saved to: ${fileUri}`);
+                  } else {
+                    throw new Error(`Download failed with status ${result?.status}`);
+                  }
                 } catch (error) {
-                  Alert.alert("Error", "Failed to generate PDF");
+                  Alert.alert("Error", error.message || "Failed to generate/download PDF");
                 }
               },
             },

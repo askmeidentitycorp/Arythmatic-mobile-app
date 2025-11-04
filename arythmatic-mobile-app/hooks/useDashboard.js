@@ -220,14 +220,9 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     setRatesUpdatedAt(new Date().toISOString());
   }, []);
 
-  // Helper function to create default chart data
+  // Helper: when no data, return empty chart dataset (no mock values)
   const createDefaultChartData = useCallback(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map((month, index) => ({
-      label: month,
-      value: Math.floor(Math.random() * 50) + 10,
-      color: colors.primary || '#6B5CE7'
-    }));
+    return [];
   }, []);
 
   // Helper function to format period labels
@@ -245,7 +240,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   const chartData = useMemo(() => {
     
     if (!analyticsData?.revenue) {
-      return createDefaultChartData();
+      return [];
     }
 
     const revenue = analyticsData.revenue;
@@ -298,7 +293,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
 
 
     if (!trends.length || trends.every(t => t.value === 0)) {
-      return createDefaultChartData();
+      return [];
     }
 
     return trends;
@@ -424,22 +419,14 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       
       // Set a user-friendly error message
       const errorMessage = err.message.includes('HTTP 500') 
-        ? 'Server error occurred. Using sample data for demonstration.'
+        ? 'Server error occurred.'
         : err.message.includes('Network') 
         ? 'Network connection issue. Please check your internet connection.'
         : err.message || 'Failed to load dashboard data';
       
       setError(errorMessage);
       
-      // Don't leave the user with a broken dashboard - provide fallback data
-      console.log('🔄 Loading fallback dashboard data...');
-      try {
-        const fallbackData = dashboardService.getCompleteFallbackData();
-        setAnalyticsData(fallbackData);
-        console.log('✅ Fallback data loaded successfully');
-      } catch (fallbackError) {
-        console.error('❌ Even fallback data failed:', fallbackError);
-      }
+      // Do not load mock fallback data
     } finally {
       setLoading(false);
     }

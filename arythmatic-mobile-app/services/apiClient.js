@@ -4,8 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConfig';
 import { handleFetchError, ApiError } from '../utils/errorHandler';
 import Constants from 'expo-constants';
+import { emitUnauthorized } from '../utils/authEvents';
 
-const BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
+export const BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "https://interaction-tracker-api-133046591892.us-central1.run.app/api/v1";
 
 class ApiClient {
   constructor() {
@@ -58,15 +59,9 @@ class ApiClient {
       }
 
       if (response.status === 401) {
-        console.error('❌ 401 Unauthorized - Token may be invalid');
-        // In development with test auth, don't clear tokens - let fallback data work
-        if (__DEV__) {
-          console.warn('⚠️ Dev Mode: Keeping token, app will use fallback data');
-        } else if (token) {
-          // Only clear token in production
-          console.warn('⚠️ Clearing invalid token from storage');
-          await this.setToken(null);
-        }
+        console.error('❌ 401 Unauthorized - Clearing token and notifying auth context');
+        await this.setToken(null);
+        emitUnauthorized('401');
         throw new Error('Authentication required - Token may be expired or invalid');
       }
 

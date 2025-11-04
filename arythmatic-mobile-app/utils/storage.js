@@ -131,7 +131,7 @@ export const regularStorage = {
  */
 export const StorageKeys = {
   // Auth tokens (encrypted)
-  ACCESS_TOKEN: '@arythmatic_access_token',
+  ACCESS_TOKEN: '@arythmatic_auth_token',
   REFRESH_TOKEN: '@arythmatic_refresh_token',
   
   // User data (encrypted)
