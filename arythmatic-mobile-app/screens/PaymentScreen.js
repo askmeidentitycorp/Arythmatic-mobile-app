@@ -184,6 +184,11 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
 
   /* ---------- KPI Metrics - Use Server-Side Counts for Accuracy ---------- */
+  // Implements payment aggregation from /payments-nested/ endpoint:
+  // 1. Aggregate payments by currency (USD, INR, etc.)
+  // 2. Compute totals: total_amount, successful_amount, failed_amount
+  // 3. Display multi-currency totals (e.g., "$600.00 + ₹1,200.00")
+  // 4. Use invoice_details for cross-referencing invoice/product data
   const metrics = useMemo(() => {
     // Helper: currency symbol
     const sym = (ccy) => ccy === 'INR' ? '₹' : ccy === 'USD' ? '$' : ccy === 'EUR' ? '€' : ccy === 'GBP' ? '£' : '';

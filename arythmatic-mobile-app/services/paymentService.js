@@ -14,6 +14,11 @@ export const paymentService = {
   exportPayments: (params) => apiClient.get('/payments/export/', params),
   
   // Get payment counts and totals
+  // Implements aggregation logic for /payments-nested/ endpoint:
+  // - Track total payments
+  // - Split successful vs unsuccessful payments
+  // - Cross-reference invoice and product data for financial reporting
+  // Each payment includes: amount, currency, status, invoice (UUID), invoice_details (full invoice with line items)
   getCounts: async () => {
     try {
       console.log('📊 Fetching payment counts from API...');
