@@ -514,9 +514,15 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Payment Management</Text>
+            <Text style={styles.title}>Payments</Text>
           </View>
           <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.filterButton} 
+              onPress={toggleFilters}
+            >
+              <Text style={styles.filterButtonText}>🔍</Text>
+            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.exportButton} 
               onPress={handleExport}
@@ -525,9 +531,22 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.addButton} 
-              onPress={() => Alert.alert('Record Payment', 'Payment form will be shown here')}
+              onPress={() => {
+                setEditingPaymentId(null);
+                setPaymentForm({
+                  invoice: '',
+                  amount: '',
+                  currency: 'USD',
+                  paymentMethod: 'Credit Card',
+                  status: 'success',
+                  transaction_id: '',
+                  external_reference: '',
+                  payment_date: new Date().toISOString().split('T')[0],
+                });
+                setShowPaymentModal(true);
+              }}
             >
-              <Text style={styles.addButtonText}>+ Record Payment</Text>
+              <Text style={styles.addButtonText}>+ Record</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -22,11 +22,31 @@ export const paymentService = {
   getCounts: async () => {
     try {
       console.log('📊 Fetching payment counts from API...');
-      // Fetch all payments to calculate accurate counts (use nested to get customer details)
-      const response = await apiClient.get('/payments-nested/', { page: 1, page_size: 10000 });
-      const payments = response?.results || response?.data?.results || [];
+      // Fetch ALL payments with pagination loop
+      let allPayments = [];
+      let page = 1;
+      let hasMore = true;
+      const pageSize = 100;
       
-      console.log(`📊 Retrieved ${payments.length} payments for counting`);
+      while (hasMore) {
+        const response = await apiClient.get('/payments-nested/', { page, page_size: pageSize });
+        const payments = response?.results || response?.data?.results || [];
+        
+        if (!payments || payments.length === 0) {
+          hasMore = false;
+          break;
+        }
+        
+        allPayments = allPayments.concat(payments);
+        console.log(`📊 Fetched page ${page}: ${payments.length} payments (total: ${allPayments.length})`);
+        
+        if (!response?.next && !response?.data?.next) {
+          hasMore = false;
+        }
+        page += 1;
+      }
+      
+      console.log(`📊 Retrieved total ${allPayments.length} payments for counting`);
       
       const counts = {
         total: allPayments.length,
