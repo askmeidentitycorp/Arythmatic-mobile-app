@@ -50,7 +50,10 @@ class ApiClient {
     try {
       if (__DEV__) {
         console.log(`🚀 API Request: ${config.method || 'GET'} ${url}`);
-        console.log(`🔑 Using Token: ${token ? 'Yes' : 'No'}`);
+        console.log(`🔑 Token present: ${token ? 'Yes' : 'No'}`);
+        if (token) {
+          console.log(`🔑 Token preview: ${token.substring(0, 20)}...`);
+        }
       }
 
       const response = await fetch(url, config);

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
+import '../utils/dashboardDebug'; // Load debug utilities
 
 // Import hooks and components
 import ActivityItem from '../components/Dashboard/ActivityItem';

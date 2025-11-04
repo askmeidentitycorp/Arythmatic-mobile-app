@@ -394,6 +394,7 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   // Fetch analytics data with graceful error handling
   const fetchDashboardData = useCallback(async () => {
     try {
+      console.log('📊 [useDashboard] Starting fetch...');
       setError(null);
       if (!analyticsData) {
         setLoading(true); // Only show loading on initial fetch
@@ -403,19 +404,24 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
       
       // Do not send currency; fetch all and convert client-side
       const params = { period };
+      console.log('📊 [useDashboard] Calling getAllDashboardData with params:', params);
       const data = await dashboardService.getAllDashboardData(params);
+      console.log('📊 [useDashboard] Data received:', JSON.stringify(data, null, 2).substring(0, 500));
       
       if (!data || typeof data !== 'object') {
+        console.error('❌ [useDashboard] Invalid data type received');
         throw new Error('Invalid data received from API');
       }
       
+      console.log('✅ [useDashboard] Setting analytics data');
       setAnalyticsData(data);
       setRatesUpdatedAt(new Date().toISOString());
       setLoading(false); // Set loading false immediately after data is set
+      console.log('✅ [useDashboard] Fetch complete');
       
     } catch(err) {
-      console.error('❌ Dashboard fetch error:', err);
-      console.error('🔍 Error details:', err.stack);
+      console.error('❌ [useDashboard] Dashboard fetch error:', err);
+      console.error('🔍 [useDashboard] Error details:', err.stack);
       
       // Set a user-friendly error message
       const errorMessage = err.message.includes('HTTP 500') 

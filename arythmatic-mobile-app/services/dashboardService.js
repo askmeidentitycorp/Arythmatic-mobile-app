@@ -105,6 +105,23 @@ export const dashboardService = {
 
       console.log('✅ Dashboard data fetched successfully (with fallbacks if needed)');
       
+      // Check if data is actually present, log warnings if empty
+      if (!overviewRes || Object.keys(overviewRes).length === 0) {
+        console.warn('⚠️ Overview data is empty');
+      }
+      if (!revenueRes || Object.keys(revenueRes).length === 0) {
+        console.warn('⚠️ Revenue data is empty');
+      }
+      if (!salesRes || Object.keys(salesRes).length === 0) {
+        console.warn('⚠️ Sales performance data is empty');
+      }
+      if (!productsRes || Object.keys(productsRes).length === 0) {
+        console.warn('⚠️ Products data is empty');
+      }
+      if (!realtimeRes || Object.keys(realtimeRes).length === 0) {
+        console.warn('⚠️ Realtime data is empty');
+      }
+      
       return {
         overview: overviewRes,
         revenue: revenueRes,
@@ -119,56 +136,4 @@ export const dashboardService = {
       throw error;
     }
   },
-
-    metrics: {
-      sales: { current: 125, growth: 15.2 },
-      customers: { active: 89, new: 12 },
-      interactions: { conversion_rate: 23.5 },
-      deals_in_pipeline: 47
-    },
-    period: 'month',
-    last_updated: new Date().toISOString()
-  }),
-
-    total_sales_count: 125,
-    summary_by_currency: {
-      USD: { total_revenue: 45750, sales_count: 85 },
-      INR: { total_revenue: 185200, sales_count: 40 }
-    },
-    trends_by_currency: [
-      { period: '2024-01', currencies: { USD: { revenue: 12500, sales_count: 25 } } },
-      { period: '2024-02', currencies: { USD: { revenue: 15600, sales_count: 32 } } },
-      { period: '2024-03', currencies: { USD: { revenue: 17650, sales_count: 28 } } }
-    ]
-  }),
-
-    by_sales_rep: [
-      { id: 1, name: 'John Smith', revenue_by_currency: { USD: { revenue: 25400 } }, total_deals: 45, overall_win_rate: 78 },
-      { id: 2, name: 'Sarah Johnson', revenue_by_currency: { USD: { revenue: 20300 } }, total_deals: 38, overall_win_rate: 82 }
-    ]
-  }),
-
-    top_products_by_currency: [
-      { id: 1, name: 'Premium Service', revenue_by_currency: { USD: 15600 }, total_revenue: 15600 },
-      { id: 2, name: 'Basic Package', revenue_by_currency: { USD: 12400 }, total_revenue: 12400 }
-    ]
-  }),
-
-    summary: { average_completion_rate: 85.2 },
-    by_member: []
-  }),
-
-    recent_activities: [
-      { id: 1, description: 'New customer registered', user: 'System', timestamp: new Date(Date.now() - 300000).toISOString() },
-      { id: 2, description: 'Payment processed', customer: 'John Doe', timestamp: new Date(Date.now() - 600000).toISOString() }
-    ]
-  }),
-
-    overview: dashboardService.getDefaultOverviewData(),
-    revenue: dashboardService.getDefaultRevenueData(),
-    salesPerformance: dashboardService.getDefaultSalesData(),
-    products: dashboardService.getDefaultProductsData(),
-    teamPerformance: dashboardService.getDefaultTeamData(),
-    realtime: dashboardService.getDefaultRealtimeData()
-  }),
 };
