@@ -29,7 +29,7 @@ export const paymentService = {
       console.log(`📊 Retrieved ${payments.length} payments for counting`);
       
       const counts = {
-        total: payments.length,
+        total: allPayments.length,
         totalValue: 0,
         successful: 0,
         failed: 0,
@@ -37,7 +37,7 @@ export const paymentService = {
         voided: 0,
       };
       
-      payments.forEach(payment => {
+      allPayments.forEach(payment => {
         const amount = parseFloat(payment.amount) || 0;
         counts.totalValue += amount;
         
