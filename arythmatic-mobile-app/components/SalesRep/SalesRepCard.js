@@ -166,7 +166,7 @@ const SalesRepCard = ({ salesRep, onAction }) => {
               "Edit Sales Rep",
               "View Performance",
               "Show Invoices",
-              "Show Interactions",
+              "View Interactions",
               isActive ? "Deactivate" : "Activate",
               "Delete",
             ];

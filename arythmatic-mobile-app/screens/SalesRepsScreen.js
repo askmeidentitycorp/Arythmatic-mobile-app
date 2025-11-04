@@ -251,12 +251,13 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         break;
         
       case "Show Interactions":
+      case "View Interactions":
         console.log('Navigate to Interactions for:', salesRep.name);
         if (navigation?.navigateToInteractions) {
           navigation.navigateToInteractions(salesRep.id, salesRep.name);
         } else if (onNavigateToInteractions) {
-          // Fallback to old method
-          onNavigateToInteractions(salesRep.id, salesRep.name);
+          // Pass as params object for App.js handler
+          onNavigateToInteractions({ repId: salesRep.id, repName: salesRep.name, from: 'SalesReps' });
         }
         break;
         

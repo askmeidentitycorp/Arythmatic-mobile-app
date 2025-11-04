@@ -114,8 +114,8 @@ const AppContent = () => {
         }
       },
       // Helper methods for action-based navigation
-      navigateToInteractions: (repId, repName) => navigateToInteractions(repId, repName, screenName),
-      navigateToInvoices: (salesRepId, salesRepName) => navigateToInvoices(salesRepId, salesRepName, screenName)
+      navigateToInteractions: (repId, repName) => navigateToInteractions({ repId, repName, from: screenName }),
+      navigateToInvoices: (salesRepId, salesRepName) => navigateToInvoices({ salesRepId, salesRepName, from: screenName })
     };
   };
 
