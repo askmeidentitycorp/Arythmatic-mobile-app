@@ -215,16 +215,28 @@ DELETE /entity-tags/{id}/        Unlink tag
 
 ### Operations by Screen
 
-#### 💳 Payments Screen (75% complete)
+#### 💳 Payments Screen (100% complete)
 | Operation | Endpoint | Status |
 |-----------|----------|--------|
 | Read (List) | `GET /payments/` | ✅ Paginated with filters |
 | Read (Single) | `GET /payments/{id}/` | ✅ Modal overlay |
-| Create | `POST /payments/` | ⚠️ TODO |
-| Update | `PATCH /payments/{id}/` | ✅ Process, Void, Refund |
-| Delete | `DELETE /payments/{id}/` | ✅ |
+| Create | `POST /payments/` | ✅ Record Payment form |
+| Update | `PATCH /payments/{id}/` | ✅ Edit Payment & status updates (Process, Void, Refund) |
+| Delete | `DELETE /payments/{id}/` | ✅ Soft delete |
 
-**Available Actions**: View, Process, Void, Refund, Delete, Export CSV
+**Available Actions**: Create, View, Edit, Process, Void, Refund, Delete, Export CSV
+
+**Form Fields** (Record/Edit Payment):
+- Invoice ID (UUID, required)
+- Amount (numeric, required)
+- Currency (USD, INR, EUR, GBP)
+- Payment Method (Credit Card, Bank Transfer, Online, Offline)
+- Status (success, pending, failed, voided)
+- Transaction ID (external ref like Stripe ID)
+- Payment Date (YYYY-MM-DD)
+- External Reference (notes)
+
+**Integration**: Auto-updates linked invoice balance and status on successful payment creation
 
 ---
 
