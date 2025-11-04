@@ -273,6 +273,8 @@ export const usePaymentMutations = () => {
   };
 
   return {
+    createPayment,
+    updatePayment,
     processPayment,
     voidPayment,
     refundPayment,

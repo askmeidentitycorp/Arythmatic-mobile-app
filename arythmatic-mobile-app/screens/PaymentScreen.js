@@ -16,6 +16,7 @@ import {
   FlatList,
   ActivityIndicator,
   Share,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
@@ -286,9 +287,22 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
 
   const handleEditPayment = useCallback(() => {
     console.log('Edit payment:', selectedPayment?.id);
+    const payment = selectedPayment;
     handleCloseActionSheet();
-    // TODO: Navigate to edit form when implemented
-    Alert.alert('Edit Payment', 'Edit payment form will be implemented in future update.');
+    if (payment) {
+      setEditingPaymentId(payment.id);
+      setPaymentForm({
+        invoice: payment.invoice_id || payment.invoice || '',
+        amount: String(payment.amount || ''),
+        currency: (payment.currency || 'USD').toUpperCase(),
+        paymentMethod: payment.payment_method || payment.paymentMethod || 'Credit Card',
+        status: payment.status || 'success',
+        transaction_id: payment.transaction_id || '',
+        external_reference: payment.external_reference || '',
+        payment_date: payment.payment_date || new Date().toISOString().split('T')[0],
+      });
+      setShowPaymentModal(true);
+    }
   }, [selectedPayment, handleCloseActionSheet]);
 
   const handleProcessPayment = useCallback(() => {
@@ -666,6 +680,156 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
             />
           </>
         )}
+
+        {/* Create/Edit Payment Modal */}
+        <Modal
+          visible={showPaymentModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowPaymentModal(false)}
+        >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+            <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>{editingPaymentId ? 'Edit Payment' : 'Record Payment'}</Text>
+                  <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
+                    <Text style={styles.modalClose}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.modalBody}>
+                  <Text style={styles.inputLabel}>Invoice ID *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="UUID of the linked invoice"
+                    placeholderTextColor={colors.subtext}
+                    value={paymentForm.invoice}
+                    onChangeText={(v) => setPaymentForm(f => ({ ...f, invoice: v }))}
+                  />
+
+                  <Text style={styles.inputLabel}>Amount *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., 600.00"
+                    placeholderTextColor={colors.subtext}
+                    value={paymentForm.amount}
+                    onChangeText={(v) => setPaymentForm(f => ({ ...f, amount: v }))}
+                    keyboardType="decimal-pad"
+                  />
+
+                  <Text style={styles.inputLabel}>Currency</Text>
+                  <DarkPicker
+                    selectedValue={paymentForm.currency}
+                    onValueChange={(v) => setPaymentForm(f => ({ ...f, currency: v }))}
+                    items={[
+                      { label: 'USD', value: 'USD' },
+                      { label: 'INR', value: 'INR' },
+                      { label: 'EUR', value: 'EUR' },
+                      { label: 'GBP', value: 'GBP' },
+                    ]}
+                  />
+
+                  <Text style={styles.inputLabel}>Payment Method</Text>
+                  <DarkPicker
+                    selectedValue={paymentForm.paymentMethod}
+                    onValueChange={(v) => setPaymentForm(f => ({ ...f, paymentMethod: v }))}
+                    items={[
+                      { label: 'Credit Card', value: 'Credit Card' },
+                      { label: 'Bank Transfer', value: 'Bank Transfer' },
+                      { label: 'Online', value: 'Online' },
+                      { label: 'Offline', value: 'Offline' },
+                    ]}
+                  />
+
+                  <Text style={styles.inputLabel}>Status</Text>
+                  <DarkPicker
+                    selectedValue={paymentForm.status}
+                    onValueChange={(v) => setPaymentForm(f => ({ ...f, status: v }))}
+                    items={[
+                      { label: 'Success', value: 'success' },
+                      { label: 'Pending', value: 'pending' },
+                      { label: 'Failed', value: 'failed' },
+                      { label: 'Voided', value: 'voided' },
+                    ]}
+                  />
+
+                  <Text style={styles.inputLabel}>Transaction ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., pi_3SOJb1SEyfiTzn7m1MfIUOc4"
+                    placeholderTextColor={colors.subtext}
+                    value={paymentForm.transaction_id}
+                    onChangeText={(v) => setPaymentForm(f => ({ ...f, transaction_id: v }))}
+                  />
+
+                  <Text style={styles.inputLabel}>Payment Date</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.subtext}
+                    value={paymentForm.payment_date}
+                    onChangeText={(v) => setPaymentForm(f => ({ ...f, payment_date: v }))}
+                  />
+
+                  <Text style={styles.inputLabel}>External Reference</Text>
+                  <TextInput
+                    style={[styles.input, { height: 60 }]}
+                    placeholder="Additional notes"
+                    placeholderTextColor={colors.subtext}
+                    value={paymentForm.external_reference}
+                    onChangeText={(v) => setPaymentForm(f => ({ ...f, external_reference: v }))}
+                    multiline
+                  />
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity style={styles.btnGhost} onPress={() => setShowPaymentModal(false)}>
+                    <Text style={styles.btnGhostText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.btnPrimary} 
+                    onPress={async () => {
+                      if (!paymentForm.invoice || !paymentForm.amount) {
+                        Alert.alert('Missing Fields', 'Invoice ID and Amount are required');
+                        return;
+                      }
+
+                      try {
+                        const payload = {
+                          invoice: paymentForm.invoice,
+                          amount: paymentForm.amount,
+                          currency: paymentForm.currency.toLowerCase(),
+                          paymentMethod: paymentForm.paymentMethod,
+                          status: paymentForm.status,
+                          transaction_id: paymentForm.transaction_id,
+                          external_reference: paymentForm.external_reference,
+                          payment_date: paymentForm.payment_date,
+                        };
+
+                        if (editingPaymentId) {
+                          await updatePayment(editingPaymentId, payload);
+                          Alert.alert('Success', 'Payment updated successfully!');
+                        } else {
+                          await createPayment(payload);
+                          Alert.alert('Success', 'Payment recorded successfully!');
+                        }
+
+                        setShowPaymentModal(false);
+                        refreshPayments();
+                      } catch (error) {
+                        console.error('Payment save error:', error);
+                        Alert.alert('Error', error.message || 'Failed to save payment');
+                      }
+                    }}
+                  >
+                    <Text style={styles.btnPrimaryText}>{editingPaymentId ? 'Update Payment' : 'Record Payment'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
 
         {/* Payment Action Sheet Modal */}
         <Modal
@@ -1434,5 +1598,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+
+  // Payment Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    height: '90%',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalClose: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  modalBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  btnPrimary: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnPrimaryText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+    marginTop: 12,
   },
 });
