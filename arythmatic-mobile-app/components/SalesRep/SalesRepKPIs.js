@@ -10,19 +10,18 @@ const KPI = ({ label, value, color = colors.primary }) => (
   </View>
 );
 
-const SalesRepKPIs = ({ loading: parentLoading, totalCount: tcProp, activeCount: acProp, inactiveCount: icProp }) => {
+const SalesRepKPIs = ({ loading: parentLoading, totalCount: tcProp, activeCount: acProp, salesAgentCount: sacProp, adminCount: admcProp }) => {
   // If counts are provided, use them; otherwise fetch via hook
-  const useHook = tcProp === undefined || acProp === undefined || icProp === undefined;
+  const useHook = tcProp === undefined || acProp === undefined || sacProp === undefined || admcProp === undefined;
   const hook = useHook ? useSalesRepMetrics() : {};
 
   const totalCount = useHook ? hook.totalCount : tcProp;
   const activeCount = useHook ? hook.activeCount : acProp;
-  const inactiveCount = useHook ? hook.inactiveCount : icProp;
+  const salesAgentCount = useHook ? hook.salesAgentCount : sacProp;
+  const adminCount = useHook ? hook.adminCount : admcProp;
   const metricsLoading = useHook ? hook.loading : false;
 
   const isLoading = parentLoading || metricsLoading;
-
-  const perf = !isLoading && totalCount > 0 ? `${Math.round((activeCount/totalCount)*100)}%` : (isLoading ? '...' : '0%');
 
   return (
     <View style={styles.kpis}>
@@ -32,18 +31,18 @@ const SalesRepKPIs = ({ loading: parentLoading, totalCount: tcProp, activeCount:
         color={colors.primary} 
       />
       <KPI 
-        label="Active Reps" 
+        label="Active" 
         value={isLoading ? "..." : String(activeCount || 0)} 
         color="#31C76A" 
       />
       <KPI 
-        label="Inactive Reps" 
-        value={isLoading ? "..." : String(inactiveCount || 0)} 
-        color="#F16364" 
+        label="Sales Agents" 
+        value={isLoading ? "..." : String(salesAgentCount || 0)} 
+        color="#6B5CE7" 
       />
       <KPI 
-        label="Performance" 
-        value={perf} 
+        label="Admins" 
+        value={isLoading ? "..." : String(adminCount || 0)} 
         color="#F4B740" 
       />
     </View>

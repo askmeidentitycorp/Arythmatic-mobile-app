@@ -611,8 +611,6 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
           onAddPress={openAddModal}
           onExportPress={handleExportCSV}
           totalCount={pagination.totalCount}
-          onBackPress={navigation?.goBack ? navigation.goBack : null}
-          backToScreen={navigation?.backToScreen || (navigation?.params?.salesRepName ? 'Sales Rep' : null)}
         />
 
         {/* KPIs */}

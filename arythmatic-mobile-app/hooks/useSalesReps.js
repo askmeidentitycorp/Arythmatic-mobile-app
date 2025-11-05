@@ -124,6 +124,8 @@ export const useSalesRepMetrics = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
   const [inactiveCount, setInactiveCount] = useState(0);
+  const [salesAgentCount, setSalesAgentCount] = useState(0);
+  const [adminCount, setAdminCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -136,24 +138,32 @@ export const useSalesRepMetrics = () => {
       const totalRes = await salesRepService.getAll({ page: 1, page_size: 1 });
       const total = (totalRes?.count != null) ? totalRes.count : (totalRes?.results?.length || 0);
 
-      // Get active/inactive counts using filtered queries (page_size=1 to read count only)
-      const [activeRes, inactiveRes] = await Promise.all([
+      // Get active/inactive and role counts using filtered queries (page_size=1 to read count only)
+      const [activeRes, inactiveRes, agentsRes, adminsRes] = await Promise.all([
         salesRepService.getAll({ page: 1, page_size: 1, is_active: true }),
         salesRepService.getAll({ page: 1, page_size: 1, is_active: false }),
+        salesRepService.getAll({ page: 1, page_size: 1, role: 'sales_agent' }),
+        salesRepService.getAll({ page: 1, page_size: 1, role: 'admin' }),
       ]);
 
       const active = activeRes?.count != null ? activeRes.count : 0;
       const inactive = inactiveRes?.count != null ? inactiveRes.count : 0;
+      const agents = agentsRes?.count != null ? agentsRes.count : 0;
+      const admins = adminsRes?.count != null ? adminsRes.count : 0;
 
       setTotalCount(total);
       setActiveCount(active);
       setInactiveCount(inactive);
+      setSalesAgentCount(agents);
+      setAdminCount(admins);
 
     } catch (err) {
       setError(err.message || 'Failed to fetch metrics');
       setTotalCount(0);
       setActiveCount(0);
       setInactiveCount(0);
+      setSalesAgentCount(0);
+      setAdminCount(0);
     } finally {
       setLoading(false);
     }
@@ -171,6 +181,8 @@ export const useSalesRepMetrics = () => {
     totalCount,
     activeCount,
     inactiveCount,
+    salesAgentCount,
+    adminCount,
     loading,
     error,
     refresh,

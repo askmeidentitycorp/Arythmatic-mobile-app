@@ -197,6 +197,40 @@ export const usePaymentMutations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const createPayment = async (data) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('📤 Creating payment:', data);
+      const response = await paymentService.create(data);
+      console.log('✅ Payment created:', response);
+      return response;
+    } catch (err) {
+      console.error('❌ Error creating payment:', err);
+      setError(err.message || 'Failed to create payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePayment = async (id, data) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('📤 Updating payment:', id, data);
+      const response = await paymentService.update(id, data);
+      console.log('✅ Payment updated:', response);
+      return response;
+    } catch (err) {
+      console.error('❌ Error updating payment:', err);
+      setError(err.message || 'Failed to update payment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const processPayment = async (id) => {
     try {
       setLoading(true);

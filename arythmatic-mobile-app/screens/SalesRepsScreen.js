@@ -93,6 +93,8 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
     totalCount,
     activeCount,
     inactiveCount,
+    salesAgentCount,
+    adminCount,
     loading: metricsLoading
   } = useSalesRepMetrics();
 
@@ -413,7 +415,8 @@ export default function SalesRepsScreen({ navigation, onNavigateToInteractions }
         <SalesRepKPIs
           totalCount={totalCount}
           activeCount={activeCount}
-          inactiveCount={inactiveCount}
+          salesAgentCount={salesAgentCount}
+          adminCount={adminCount}
           loading={metricsLoading}
         />
 

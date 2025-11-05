@@ -202,8 +202,9 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       breakdown[c] ||= { count: 0, total: 0, successful: 0, failed: 0 };
       breakdown[c].count += 1;
       breakdown[c].total += amt;
-      if (p.status === 'Success') breakdown[c].successful += amt;
-      if (p.status === 'Failed' || p.status === 'Voided') breakdown[c].failed += amt;
+      const status = (p.status || '').toString();
+      if (status === 'Success' || status === 'Completed' || status.toLowerCase() === 'success') breakdown[c].successful += amt;
+      if (status === 'Failed' || status === 'Voided' || status.toLowerCase() === 'failed' || status.toLowerCase() === 'voided') breakdown[c].failed += amt;
     });
 
     // Order currencies: USD first, then others alphabetically
