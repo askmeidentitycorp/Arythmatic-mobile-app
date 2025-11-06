@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from "../constants/config";
 import { dashboardService } from '../services/dashboardService';
+import { getRate, formatCurrency as sharedFormatCurrency } from '../utils/currency';
 
 export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -9,31 +10,6 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
   const [error, setError] = useState(null);
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState(null);
   
-  // Exchange rates
-  // We keep direct mappings for USD/EUR/INR as tuned earlier, and compute other pairs via USD base rates
-  const directRates = {
-    USD: { INR: 87.94, EUR: 0.85, USD: 1 },
-    INR: { USD: 0.01137, EUR: 0.00967, INR: 1 },
-    EUR: { USD: 1.18, INR: 103.46, EUR: 1 },
-  };
-  // USD per unit for supported currencies (approximate; used when direct mapping not present)
-  const usdPerUnit = {
-    USD: 1,
-    EUR: 1.1765,
-    GBP: 1.28,
-    INR: 0.01137,
-    JPY: 0.0067,
-    CNY: 0.137,
-    CAD: 0.73,
-    AUD: 0.66,
-  };
-  const getRate = (from, to) => {
-    const f = (from || '').toUpperCase();
-    const t = (to || '').toUpperCase();
-    if (directRates[f]?.[t] != null) return directRates[f][t];
-    if (usdPerUnit[f] && usdPerUnit[t]) return usdPerUnit[f] / usdPerUnit[t];
-    return 1;
-  };
 
   // Convert date range to period parameter
   const getPeriodParam = useCallback((range) => {
@@ -46,15 +22,8 @@ export const useDashboard = (currency = 'USD', dateRange = 'This Month') => {
     }
   }, []);
 
-  // Format currency - show actual values like $79,093 instead of $79K
   const formatCurrency = useCallback((amount, curr = currency) => {
-    const symbols = { USD: '$', INR: '₹', EUR: '€' };
-    if (typeof amount !== 'number' || isNaN(amount)) return `${symbols[curr] || curr}0`;
-    
-    // Format with commas for thousands separators (like website)
-    const displayAmount = Math.round(amount).toLocaleString();
-    
-    return `${symbols[curr] || curr}${displayAmount}`;
+    return sharedFormatCurrency(amount, curr);
   }, [currency]);
 
   // Helper function for relative time - MOVED BEFORE useMemo

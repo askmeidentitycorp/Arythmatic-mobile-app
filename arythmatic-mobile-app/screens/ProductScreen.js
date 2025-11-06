@@ -52,7 +52,7 @@ export default function ProductScreen({ navigation }) {
       }
       
       if (filters.productType) {
-        params.product_type = filters.productType;
+        params.productType = filters.productType;
       }
       
       if (filters.isActive !== null) {
@@ -106,10 +106,9 @@ export default function ProductScreen({ navigation }) {
       type: 'select',
       required: true,
       options: [
-        { label: 'Physical Product', value: 'physical' },
-        { label: 'Digital Service', value: 'service' },
-        { label: 'Software', value: 'software' },
-        { label: 'Subscription', value: 'subscription' },
+        { label: 'Digital', value: 'digital' },
+        { label: 'Physical', value: 'physical' },
+        { label: 'Service', value: 'service' },
       ],
       defaultValue: 'physical',
     },
@@ -143,6 +142,12 @@ export default function ProductScreen({ navigation }) {
         { label: 'Inactive', value: false },
       ],
       defaultValue: true,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      type: 'multiline',
+      placeholder: 'Add internal notes about this product...'
     },
   ];
 
@@ -300,6 +305,15 @@ export default function ProductScreen({ navigation }) {
         formData.price = parseFloat(formData.price);
       }
       
+      // Map notes to array of objects if provided (for nested endpoint)
+      if (formData.notes && String(formData.notes).trim().length > 0) {
+        formData.notes = String(formData.notes)
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean)
+          .map(note => ({ note }));
+      }
+
       if (modalMode === 'create') {
         console.log('Creating product:', formData);
         await createProduct(formData, true); // useNested = true

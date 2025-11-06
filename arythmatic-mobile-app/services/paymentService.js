@@ -50,36 +50,52 @@ export const paymentService = {
       
       const counts = {
         total: allPayments.length,
-        totalValue: 0,
-        successful: 0,
-        failed: 0,
-        pending: 0,
-        voided: 0,
+        totalValue: 0, // legacy combined (multi-currency) amount
+        successful: 0, // legacy combined
+        failed: 0,     // legacy combined
+        pending: 0,    // legacy combined
+        voided: 0,     // legacy combined
+        summary_by_currency: {},
       };
       
       allPayments.forEach(payment => {
         const amount = parseFloat(payment.amount) || 0;
+        const currency = (payment.currency || 'USD').toUpperCase();
+        const status = (payment.status || 'pending').toLowerCase();
+        
+        // Legacy totals (not currency-aware)
         counts.totalValue += amount;
         
-        const status = (payment.status || 'pending').toLowerCase();
+        if (!counts.summary_by_currency[currency]) {
+          counts.summary_by_currency[currency] = {
+            count: 0,
+            total: 0,
+            successful: 0,
+            failed: 0,
+            voided: 0,
+            pending: 0,
+          };
+        }
+        const byC = counts.summary_by_currency[currency];
+        byC.count += 1;
+        byC.total += amount;
+        
         if (status === 'success' || status === 'successful' || status === 'completed') {
           counts.successful += amount;
+          byC.successful += amount;
         } else if (status === 'failed') {
           counts.failed += amount;
+          byC.failed += amount;
         } else if (status === 'voided' || status === 'void' || status === 'cancelled') {
           counts.voided += amount;
+          byC.voided += amount;
         } else {
           counts.pending += amount;
+          byC.pending += amount;
         }
       });
       
-      console.log('📊 Payment counts calculated:', {
-        total: counts.total,
-        totalValue: counts.totalValue.toFixed(2),
-        successful: counts.successful.toFixed(2),
-        failed: counts.failed.toFixed(2),
-        voided: counts.voided.toFixed(2)
-      });
+      console.log('📊 Payment counts calculated (by currency):', counts.summary_by_currency);
       
       return counts;
     } catch (error) {

@@ -146,18 +146,24 @@ export const useCustomerMetrics = () => {
     try {
       setLoading(true);
       setError(null);
-      // Use minimal page_size to get counts from API
-      const [totalRes, indivRes, bizRes, activeRes] = await Promise.all([
+      // Use minimal page_size to get counts from API (server returns count)
+      const [totalRes, indivRes, bizRes, deletedRes] = await Promise.all([
         customerService.getAll({ page: 1, page_size: 1 }),
         customerService.getAll({ page: 1, page_size: 1, type: 'Individual' }),
         customerService.getAll({ page: 1, page_size: 1, type: 'Business' }),
-        customerService.getAll({ page: 1, page_size: 1, is_deleted: false }),
+        customerService.getAll({ page: 1, page_size: 1, is_deleted: true }),
       ]);
 
-      setTotalCount(totalRes?.count || 0);
-      setIndividualCount(indivRes?.count || 0);
-      setBusinessCount(bizRes?.count || 0);
-      setActiveCount(activeRes?.count || 0);
+      const total = totalRes?.count || 0;
+      const individual = indivRes?.count || 0;
+      const business = bizRes?.count || 0;
+      const deleted = deletedRes?.count || 0;
+      const active = Math.max(total - deleted, 0);
+
+      setTotalCount(total);
+      setIndividualCount(individual);
+      setBusinessCount(business);
+      setActiveCount(active);
     } catch (err) {
       setError(err.message || 'Failed to fetch customer metrics');
       setTotalCount(0);

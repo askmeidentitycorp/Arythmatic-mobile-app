@@ -93,7 +93,7 @@ const CustomerCard = ({ customer, onActionPress, onAction }) => {
       <Text style={styles.infoText}>Phone: {phone}</Text>
       <Text style={styles.infoText}>Country: {customer.countryCode || "—"}</Text>
       <Text style={styles.infoText}>
-        Created: {new Date(customer.created_at || Date.now()).toLocaleDateString()}
+        Created: {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '—'}
       </Text>
 
       {/* Expanded Content */}

@@ -140,6 +140,31 @@ export const useInvoice = (id, useNested = true) => {
   return { invoice, loading, error, refresh };
 };
 
+export const useInvoiceMetrics = () => {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const counts = await invoiceService.getCounts();
+      setMetrics(counts);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch invoice metrics');
+      setMetrics(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  const refresh = useCallback(() => fetchMetrics(), [fetchMetrics]);
+
+  return { metrics, loading, error, refresh };
+};
+
 export const useInvoiceMutations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

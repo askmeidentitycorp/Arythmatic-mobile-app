@@ -51,6 +51,16 @@ const LabeledInput = ({ label, value, onChangeText, placeholder, multiline, ...r
   );
 };
 
+const fmtDate = (iso) => {
+  try {
+    const d = new Date(iso);
+    if (!iso || String(d) === 'Invalid Date') return '—';
+    return `${d.toLocaleDateString()} • ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  } catch {
+    return '—';
+  }
+};
+
 export default function InteractionScreen({ navigation, onBack, initialRepId, initialRepName, initialCustomerId, initialCustomerName }) {
   const [nameCache, setNameCache] = useState({});
   const fetchingIdsRef = useRef(new Set());
@@ -71,6 +81,7 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
     scheduledDate: "",
     followUpDate: "",
     description: "",
+    notes: "",
   });
 
   // Notes/Product management modals
@@ -262,6 +273,7 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
       scheduledDate: "",
       followUpDate: "",
       description: "",
+      notes: "",
     });
     setShowAdd(true);
   };
@@ -284,6 +296,15 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
       follow_up_date: form.followUpDate || null,
       description: form.description.trim(),
     };
+
+    // Include notes if provided (as array of objects)
+    if (form.notes && String(form.notes).trim().length > 0) {
+      interactionData.notes = String(form.notes)
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(note => ({ note }));
+    }
 
     try {
       await createInteraction(interactionData, true);
@@ -758,6 +779,14 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
                   value={form.description} 
                   onChangeText={(v) => setForm((f) => ({ ...f, description: v }))} 
                   placeholder="Enter interaction description..." 
+                  multiline 
+                />
+
+                <LabeledInput 
+                  label="Notes" 
+                  value={form.notes} 
+                  onChangeText={(v) => setForm((f) => ({ ...f, notes: v }))} 
+                  placeholder="Add notes (one per line)" 
                   multiline 
                 />
               </ScrollView>

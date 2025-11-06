@@ -132,10 +132,10 @@ export const roleService = {
    * @param {string} roleId - Role ID
    * @returns {Promise} List of users with this role
    */
-  getUsersByRole: async (roleId) => {
+  getUsersByRole: async (roleId, params = {}) => {
     try {
-      console.log('📞 API Call: GET /roles/' + roleId + '/users/');
-      const response = await apiClient.get(`/roles/${roleId}/users/`);
+      console.log('📞 API Call: GET /roles/' + roleId + '/users/', params);
+      const response = await apiClient.get(`/roles/${roleId}/users/`, params);
       return response.data || response;
     } catch (error) {
       console.error('❌ API Error in roleService.getUsersByRole:', error);

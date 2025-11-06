@@ -2,6 +2,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../constants/config';
+import { useInvoiceMetrics } from '../../hooks/useInvoices';
+import { symbol } from '../../utils/currency';
 
 const KPI = ({ label, value, color = "#9695D7", isAmount = false }) => (
   <View style={styles.kpiBox}>
@@ -12,95 +14,40 @@ const KPI = ({ label, value, color = "#9695D7", isAmount = false }) => (
   </View>
 );
 
-const InvoiceKPIs = ({ invoices, totalCount }) => {
-  const metrics = React.useMemo(() => {
-    console.log('Calculating Invoice KPIs from:', invoices.length, 'invoices');
-    console.log('Sample invoice:', invoices[0]);
+const InvoiceKPIs = () => {
+  const { metrics, loading } = useInvoiceMetrics();
 
-    // FIXED: Count by status (matching web app exact logic)
-    const draft = invoices.filter((i) => i.status === 'draft').length;
-    const open = invoices.filter((i) => i.status === 'open').length;
-    const sent = invoices.filter((i) => i.status === 'sent').length;
-    const partialPaid = invoices.filter((i) => i.status === 'partial_paid').length;
-    const fullPaid = invoices.filter((i) => i.status === 'full_paid').length;
-    const overdue = invoices.filter((i) => i.status === 'overdue').length;
-    const cancelled = invoices.filter((i) => i.status === 'cancelled').length;
+  const joinCurrencies = (obj, key) => {
+    if (!obj) return '$0';
+    const order = Object.keys(obj).sort((a,b) => (a==='USD'? -1 : b==='USD'? 1 : a.localeCompare(b)));
+    return order.map(ccy => `${symbol(ccy)}${Number(obj[ccy][key] || 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`).join(' + ');
+  };
 
-    // FIXED: Calculate values from CURRENT PAGE only (matching web)
-    const convertToUSD = (amount, currency) => {
-      const exchangeRates = {
-        USD: 1,
-        EUR: 1.1,
-        GBP: 1.25,
-        INR: 0.012,
-      };
-      const rate = exchangeRates[currency] || 1;
-      return parseFloat(amount || 0) * rate;
-    };
+  const safe = metrics || { status_counts: {}, summary_by_currency: {} };
+  const sc = safe.status_counts || {};
 
-    const totalValue = invoices.reduce((sum, invoice) => {
-      return sum + convertToUSD(invoice.grossAmount, invoice.currency);
-    }, 0);
-
-    const paidValue = invoices.reduce((sum, invoice) => {
-      if (invoice.status === 'full_paid') {
-        return sum + convertToUSD(invoice.grossAmount, invoice.currency);
-      } else if (invoice.status === 'partial_paid') {
-        return sum + convertToUSD(
-          parseFloat(invoice.grossAmount || 0) - parseFloat(invoice.balanceAmount || 0),
-          invoice.currency
-        );
-      }
-      return sum;
-    }, 0);
-
-    const pendingValue = invoices.reduce((sum, invoice) => {
-      if (['open', 'sent', 'draft'].includes(invoice.status)) {
-        return sum + convertToUSD(invoice.grossAmount, invoice.currency);
-      } else if (invoice.status === 'partial_paid') {
-        return sum + convertToUSD(invoice.balanceAmount, invoice.currency);
-      }
-      return sum;
-    }, 0);
-
-    console.log('Calculated Invoice Metrics:', {
-      total: totalCount,
-      draft,
-      open,
-      sent,
-      partialPaid,
-      fullPaid,
-      overdue,
-      cancelled,
-      totalValue,
-      paidValue,
-      pendingValue,
-      pageSize: invoices.length 
-    });
-
-    return {
-      total: totalCount,
-      draft,
-      open,
-      sent,
-      partialPaid,
-      fullPaid,
-      overdue,
-      cancelled,
-      totalValue,
-      paidValue,
-      pendingValue
-    };
-  }, [invoices, totalCount]);
+  const k = {
+    total: safe.total || 0,
+    totalValue: joinCurrencies(safe.summary_by_currency, 'total_value'),
+    paidValue: joinCurrencies(safe.summary_by_currency, 'paid_value'),
+    pendingValue: joinCurrencies(safe.summary_by_currency, 'pending_value'),
+    draft: sc.draft || 0,
+    open: sc.open || 0,
+    sent: sc.sent || 0,
+    partialPaid: sc.partial_paid || 0,
+    fullPaid: sc.full_paid || 0,
+    overdue: sc.overdue || 0,
+    cancelled: sc.cancelled || 0,
+  };
 
   return (
     <View style={styles.kpis}>
-      <KPI label="Total" value={metrics.total} color="#1890ff" />
-      <KPI label="Total Value" value={Math.round(metrics.totalValue)} color="#1890ff" isAmount />
-      <KPI label="Paid" value={Math.round(metrics.paidValue)} color="#52c41a" isAmount />
-      <KPI label="Pending" value={Math.round(metrics.pendingValue)} color="#faad14" isAmount />
-      <KPI label="Overdue" value={metrics.overdue} color="#ff4d4f" />
-      <KPI label="Draft" value={metrics.draft} color="#8c8c8c" />
+      <KPI label="Total" value={k.total} color="#1890ff" />
+      <KPI label="Total Value" value={k.totalValue} color="#1890ff" />
+      <KPI label="Paid" value={k.paidValue} color="#52c41a" />
+      <KPI label="Pending" value={k.pendingValue} color="#faad14" />
+      <KPI label="Overdue" value={k.overdue} color="#ff4d4f" />
+      <KPI label="Draft" value={k.draft} color="#8c8c8c" />
     </View>
   );
 };

@@ -300,16 +300,30 @@ export default function CustomerScreen({ navigation }) {
   // Handle form submission (Create/Update)
   const handleFormSubmit = async (formData) => {
     try {
-      // Map to API expected keys (snake_case)
+      // Normalize values to API expectations
+      const mapType = (t) => {
+        if (!t) return '';
+        const v = String(t).toLowerCase();
+        if (v === 'individual') return 'Individual';
+        if (v === 'business') return 'Business';
+        if (v === 'enterprise') return 'Enterprise';
+        return t; // assume already correct
+      };
+
+      // Map to API expected keys (snake_case) — nested endpoint supports simple fields
       const payload = {
         display_name: formData.displayName,
         email: formData.email,
         phone: formData.phone,
-        type: formData.type,
-        country_code: formData.countryCode,
+        type: mapType(formData.type),
+        country_code: (formData.countryCode || '').toUpperCase(),
         address: formData.address,
-        notes: formData.notes,
       };
+
+      // Notes handling: backend expects array of notes for nested; if user typed text, wrap it
+      if (formData.notes && String(formData.notes).trim().length > 0) {
+        payload.notes = [{ note: String(formData.notes).trim() }];
+      }
 
       if (modalMode === 'create') {
         console.log('Creating customer:', payload);

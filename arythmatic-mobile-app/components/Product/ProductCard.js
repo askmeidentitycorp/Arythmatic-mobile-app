@@ -86,9 +86,6 @@ const ProductCard = ({ product, onAction }) => {
     'View Details',
     'Edit Product',
     'Duplicate',
-    'Manage Pricing',
-    'Manage Notes',
-    'Audit History',
     isActive ? 'Deactivate' : 'Activate',
     'Delete',
   ];

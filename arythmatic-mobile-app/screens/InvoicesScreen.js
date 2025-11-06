@@ -80,6 +80,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     soldBy: "",
     notes: "",
     taxRate: 18,
+    taxes: [],
     items: [{ id: Date.now().toString(), name: "", qty: 1, price: 0 }],
   });
   const [editingId, setEditingId] = useState(null);
@@ -180,6 +181,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     soldBy: "",
     notes: "",
     taxRate: 18,
+    taxes: [],
     items: [{ id: Date.now().toString(), name: "", qty: 1, price: 0 }],
   });
 
@@ -207,6 +209,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
       soldBy: invoice.soldBy || invoice.sold_by || "",
       notes: invoice.notes || "",
       taxRate: invoice.taxRate || invoice.tax_rate || 18,
+      taxes: invoice.taxes || [],
       items: invoice.line_items?.map(item => ({
         id: item.id?.toString() || Date.now().toString(),
         name: item.name || item.product_name || "",
@@ -338,6 +341,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
           soldBy: invoice.soldBy || invoice.sold_by || "",
           notes: invoice.notes || "",
           taxRate: invoice.taxRate || invoice.tax_rate || 18,
+          taxes: (invoice.taxes || []).map(t => ({ name: t.name || t.label || '', rate: t.rate || t.percent || 0 })),
           items: (invoice.line_items || []).map(item => ({
             id: Date.now().toString() + Math.random(),
             name: item.name || item.product_name || "",
@@ -351,31 +355,11 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         setModalActiveTab(0);
         break;
 
-      case "Send Invoice":
-        Alert.alert(
-          "Send Invoice",
-          `Send invoice ${invoice.invoiceNumber || invoice.invoice_number} to ${invoice.customer_details?.displayName || invoice.customer}?`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Send",
-              onPress: async () => {
-                try {
-                  await invoiceService.sendInvoice(invoice.id);
-                  refresh();
-                  Alert.alert("Success", "Invoice sent successfully");
-                } catch (error) {
-                  Alert.alert("Error", error.message || "Failed to send invoice");
-                }
-              },
-            },
-          ]
-        );
-        break;
+      // Hidden: Send Invoice (no endpoint available)
 
       case "Mark as Draft":
       case "Mark as Open":
-      case "Mark as Paid":
+      // Hidden: Mark as Paid (no endpoint available)
       case "Mark as Void":
         const statusMap = {
           "Mark as Draft": "draft",
@@ -508,6 +492,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
       soldBy: form.soldBy.trim(),
       notes: form.notes.trim(),
       taxRate: parseFloat(form.taxRate) || 0,
+      taxes: (form.taxes || []).map(t => ({ name: t.name || '', rate: parseFloat(t.rate) || 0 })),
       line_items: form.items.map(item => ({
         name: item.name,
         quantity: parseInt(item.qty) || 1,
@@ -562,7 +547,16 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     const sub = items.reduce((sum, it) => sum + (parseInt(it.qty) || 0) * (parseFloat(it.price) || 0), 0);
     const discount = parseFloat(form.discountAmount) || 0;
     const subAfterDiscount = Math.max(0, sub - discount);
-    const tax = ((parseFloat(form.taxRate) || 0) / 100) * subAfterDiscount;
+
+    // If taxes array present, sum rates; else fallback to single taxRate
+    let tax = 0;
+    if (Array.isArray(form.taxes) && form.taxes.length > 0) {
+      const combinedRate = form.taxes.reduce((sum, t) => sum + (parseFloat(t.rate) || 0), 0);
+      tax = (combinedRate / 100) * subAfterDiscount;
+    } else {
+      tax = ((parseFloat(form.taxRate) || 0) / 100) * subAfterDiscount;
+    }
+
     const total = subAfterDiscount + tax;
 
     return { sub, discount, tax, total };
@@ -679,8 +673,8 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
                     "View Invoice",
                     "Edit Invoice",
                     "Duplicate",
-                    "Send Invoice",
-                    "Mark as Paid",
+                    // hidden: Send Invoice (endpoint not present in API)
+                    // hidden: Mark as Paid (endpoint not present in API)
                     "Record Payment",
                     "Download PDF",
                     "Audit History",
@@ -863,6 +857,36 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
                       <Text style={[styles.subtle, { fontWeight: "700" }]}>{formatMoney(calc.total)}</Text>
                     </View>
                   </View>
+                </>
+              )}
+
+              {modalActiveTab === 2 && (
+                <>
+                  {(form.taxes || []).map((tx, idx) => (
+                    <View key={tx.id || `tax_${idx}`} style={styles.itemRow}>
+                      <TextInput
+                        placeholder="Tax name (e.g., VAT)"
+                        placeholderTextColor={colors.subtext}
+                        value={tx.name || ''}
+                        onChangeText={(v) => setForm(f => { const taxes = [...(f.taxes||[])]; taxes[idx] = { ...taxes[idx], name: v }; return { ...f, taxes }; })}
+                        style={[styles.input, { flex: 1 }]}
+                      />
+                      <TextInput
+                        placeholder="Rate %"
+                        placeholderTextColor={colors.subtext}
+                        value={String(tx.rate ?? '')}
+                        onChangeText={(v) => setForm(f => { const taxes = [...(f.taxes||[])]; taxes[idx] = { ...taxes[idx], rate: v }; return { ...f, taxes }; })}
+                        keyboardType="decimal-pad"
+                        style={[styles.input, styles.itemQty]}
+                      />
+                      <TouchableOpacity onPress={() => setForm(f => ({ ...f, taxes: (f.taxes||[]).filter((_, i) => i !== idx) }))}>
+                        <Text style={{ color: "#ff6b6b", fontSize: 18 }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <TouchableOpacity onPress={() => setForm(f => ({ ...f, taxes: [...(f.taxes||[]), { id: Date.now().toString(), name: '', rate: '' }] }))}>
+                    <Text style={{ color: colors.primary, fontWeight: '700' }}>＋ Add Tax</Text>
+                  </TouchableOpacity>
                 </>
               )}
 

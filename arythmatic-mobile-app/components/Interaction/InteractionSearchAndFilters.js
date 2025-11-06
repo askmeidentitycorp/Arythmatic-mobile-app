@@ -46,6 +46,7 @@ const InteractionSearchAndFilters = ({
                   { label: "New", value: "new" },
                   { label: "In Progress", value: "in_progress" },
                   { label: "Completed", value: "completed" },
+                  { label: "Cancelled", value: "cancelled" },
                 ]}
                 placeholder="All Status"
               />
@@ -61,6 +62,21 @@ const InteractionSearchAndFilters = ({
                   { label: "High", value: "high" },
                 ]}
                 placeholder="All Priority"
+              />
+            </View>
+            <View style={styles.dropdownContainer}>
+              <DarkPicker
+                selectedValue={filters.interaction_type}
+                onValueChange={(v) => onFiltersChange({ ...filters, interaction_type: v })}
+                items={[
+                  { label: "All Types", value: "" },
+                  { label: "Call", value: "call" },
+                  { label: "Email", value: "email" },
+                  { label: "Meeting", value: "meeting" },
+                  { label: "Demo", value: "demo" },
+                  { label: "Follow Up", value: "follow_up" },
+                ]}
+                placeholder="All Types"
               />
             </View>
           </View>

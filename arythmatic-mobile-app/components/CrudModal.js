@@ -39,7 +39,16 @@ const CrudModal = ({
     if (visible) {
       const initData = {};
       fields.forEach(field => {
-        initData[field.key] = initialData[field.key] || field.defaultValue || '';
+        let value = initialData[field.key];
+        if (value == null) value = field.defaultValue ?? '';
+        // If the field is multiline and value is an array (e.g., notes), coerce to newline-separated text
+        if (field.type === 'multiline' && Array.isArray(value)) {
+          value = value
+            .map(v => (typeof v === 'string' ? v : (v && typeof v === 'object' && 'note' in v ? v.note : '')))
+            .filter(Boolean)
+            .join('\n');
+        }
+        initData[field.key] = value;
       });
       setFormData(initData);
       setErrors({});

@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from "../constants/config";
 import { usePayments, usePaymentMetrics, usePaymentMutations } from '../hooks/usePayments';
+import { symbol as currencySymbol } from '../utils/currency';
 import { paymentService } from '../services/paymentService';
 import * as FileSystem from 'expo-file-system';
 import DarkPicker from '../components/Customer/DarkPicker';
@@ -192,35 +193,43 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   // 4. Use invoice_details for cross-referencing invoice/product data
   const metrics = useMemo(() => {
     // Helper: currency symbol
-    const sym = (ccy) => ccy === 'INR' ? '₹' : ccy === 'USD' ? '$' : ccy === 'EUR' ? '€' : ccy === 'GBP' ? '£' : '';
+    const sym = (ccy) => currencySymbol(ccy) || ccy;
 
-    // Build per-currency totals from current page (also used to render strings when kpiCounts exists)
+    // Build per-currency totals from current page (fallback only)
     const breakdown = {};
     payments.forEach(p => {
       const c = (p.currency || 'USD').toUpperCase();
       const amt = parseFloat(p.amount) || 0;
-      breakdown[c] ||= { count: 0, total: 0, successful: 0, failed: 0 };
+      breakdown[c] ||= { count: 0, total: 0, successful: 0, failed: 0, voided: 0 };
       breakdown[c].count += 1;
       breakdown[c].total += amt;
-      const status = (p.status || '').toString();
-      if (status === 'Success' || status === 'Completed' || status.toLowerCase() === 'success') breakdown[c].successful += amt;
-      if (status === 'Failed' || status === 'Voided' || status.toLowerCase() === 'failed' || status.toLowerCase() === 'voided') breakdown[c].failed += amt;
+      const status = (p.status || '').toString().toLowerCase();
+      if (status === 'success' || status === 'successful' || status === 'completed') breakdown[c].successful += amt;
+      if (status === 'failed') breakdown[c].failed += amt;
+      if (status === 'voided' || status === 'void') breakdown[c].voided += amt;
     });
 
-    // Order currencies: USD first, then others alphabetically
-    const order = Object.keys(breakdown).sort((a,b) => (a==='USD'? -1 : b==='USD'? 1 : a.localeCompare(b)));
-    const fmtJoin = (key) => order.map(ccy => `${sym(ccy)}${(breakdown[ccy][key] || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`).join(' + ');
-
-    // If server KPIs exist, use their counts, but display values per-currency from current page to avoid mixed-symbol errors
-    if (kpiCounts) {
+    // If server KPIs exist, prefer server aggregated amounts and render as USD only
+    if (kpiCounts && kpiCounts.summary_by_currency) {
+      const sum = kpiCounts.summary_by_currency || {};
+      const usd = sum['USD'] || sum['usd'];
+      const firstKey = !usd ? Object.keys(sum)[0] : 'USD';
+      const row = usd || (firstKey ? sum[firstKey] : {});
+      const symUsd = '$';
+      const fmt2 = (n) => `${symUsd}${Number(n || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+      const failedVoided = Number(row?.failed || 0) + Number(row?.voided || 0);
       return {
         total: kpiCounts.total || payments.length || 0,
-        totalValue: fmtJoin('total'),
-        successful: fmtJoin('successful'),
-        failed: fmtJoin('failed'),
-        currencyBreakdown: breakdown,
+        totalValue: fmt2(row?.total),
+        successful: fmt2(row?.successful),
+        failed: fmt2(failedVoided),
+        currencyBreakdown: sum,
       };
     }
+
+    // Fallback: build formatted strings from current page only
+    const order = Object.keys(breakdown).sort((a,b) => (a==='USD'? -1 : b==='USD'? 1 : a.localeCompare(b)));
+    const fmtJoin = (key) => order.map(ccy => `${sym(ccy)}${(breakdown[ccy][key] || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`).join(' + ');
 
     return {
       total: payments.length,
@@ -230,6 +239,31 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       currencyBreakdown: breakdown,
     };
   }, [payments, kpiCounts]);
+
+  // Currency breakdown list (normalized and merged by code)
+  const currencyBreakdownList = useMemo(() => {
+    const fromServer = kpiCounts?.summary_by_currency;
+    const source = fromServer || metrics.currencyBreakdown || {};
+    // Merge case-insensitively
+    const merged = {};
+    Object.entries(source).forEach(([code, row]) => {
+      const C = (code || '').toUpperCase();
+      if (!merged[C]) merged[C] = { count: 0, total: 0, successful: 0, failed: 0, voided: 0 };
+      merged[C].count += Number(row?.count || 0);
+      merged[C].total += Number(row?.total || row?.total_revenue || 0);
+      merged[C].successful += Number(row?.successful || 0);
+      merged[C].failed += Number(row?.failed || 0);
+      merged[C].voided += Number(row?.voided || 0);
+    });
+    const order = Object.keys(merged).sort((a,b) => (a==='USD'? -1 : b==='USD'? 1 : a.localeCompare(b)));
+    return order.map(ccy => ({
+      code: ccy,
+      count: merged[ccy].count,
+      total: merged[ccy].total,
+      successful: merged[ccy].successful,
+      failedVoided: merged[ccy].failed + merged[ccy].voided,
+    }));
+  }, [kpiCounts, metrics.currencyBreakdown]);
 
   /* ---------- Filters ---------- */
   const filteredPayments = useMemo(() => {
@@ -505,6 +539,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     }
   }, [metrics]);
 
+  // Styles for breakdown
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
@@ -590,6 +626,20 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
                 <Text style={styles.kpiLabel}>Failed/Voided</Text>
                 <Text style={[styles.kpiValue, { color: "#EA4335" }]}>{metrics.failed}</Text>
               </View>
+            </View>
+
+            {/* Currency Breakdown */}
+            <View style={styles.breakdownPanel}>
+              <Text style={styles.breakdownTitle}>Currency Breakdown</Text>
+              {currencyBreakdownList.map((row) => (
+                <View key={row.code} style={styles.breakdownRow}>
+                  <Text style={styles.breakdownCode}>{row.code}</Text>
+                  <Text style={styles.breakdownCount}>{row.count} payments</Text>
+                  <Text style={styles.breakdownTotal}>{(currencySymbol(row.code) || row.code)}{row.total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</Text>
+                  <Text style={styles.breakdownSub}>Success: {(currencySymbol(row.code) || row.code)}{row.successful.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</Text>
+                  <Text style={styles.breakdownSub}>Failed: {(currencySymbol(row.code) || row.code)}{row.failedVoided.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</Text>
+                </View>
+              ))}
             </View>
           </>
         )}
@@ -890,29 +940,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
                   <Text style={styles.actionButtonText}>Edit Payment</Text>
                 </TouchableOpacity>
 
-                {/* Process Payment */}
-                <TouchableOpacity style={styles.actionButton} onPress={handleProcessPayment}>
-                  <View style={styles.actionIconContainer}>
-                    <Text style={styles.actionIcon}>✓</Text>
-                  </View>
-                  <Text style={styles.actionButtonText}>Process Payment</Text>
-                </TouchableOpacity>
-
-                {/* Void Payment */}
-                <TouchableOpacity style={styles.actionButton} onPress={handleVoidPayment}>
-                  <View style={styles.actionIconContainer}>
-                    <Text style={styles.actionIcon}>⊘</Text>
-                  </View>
-                  <Text style={styles.actionButtonText}>Void Payment</Text>
-                </TouchableOpacity>
-
-                {/* Refund Payment */}
-                <TouchableOpacity style={styles.actionButton} onPress={handleRefundPayment}>
-                  <View style={styles.actionIconContainer}>
-                    <Text style={styles.actionIcon}>↩</Text>
-                  </View>
-                  <Text style={styles.actionButtonText}>Refund Payment</Text>
-                </TouchableOpacity>
+                {/* Payment action endpoints not available in API: hide these actions */}
+                {/* Process/Void/Refund removed to avoid non-functioning buttons */}
 
                 {/* Audit History */}
                 <TouchableOpacity style={styles.actionButton} onPress={handleAuditHistory}>

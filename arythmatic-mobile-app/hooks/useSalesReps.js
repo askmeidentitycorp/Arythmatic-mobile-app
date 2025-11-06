@@ -1,6 +1,7 @@
 // hooks/useSalesReps.js
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { salesRepService } from '../services/salesRepService';
+import { roleService } from '../services/roleService';
 
 export const useSalesReps = (params = {}, pageSize = 10, useAnalytics = false) => {
   const [salesReps, setSalesReps] = useState([]);
@@ -134,22 +135,60 @@ export const useSalesRepMetrics = () => {
       setLoading(true);
       setError(null);
 
-      // Get total count quickly (no filters needed)
-      const totalRes = await salesRepService.getAll({ page: 1, page_size: 1 });
-      const total = (totalRes?.count != null) ? totalRes.count : (totalRes?.results?.length || 0);
-
-      // Get active/inactive and role counts using filtered queries (page_size=1 to read count only)
-      const [activeRes, inactiveRes, agentsRes, adminsRes] = await Promise.all([
+      // 1) Total and active/inactive counts from sales-reps list endpoint (server-provided count)
+      const [totalRes, activeRes, inactiveRes] = await Promise.all([
+        salesRepService.getAll({ page: 1, page_size: 1 }),
         salesRepService.getAll({ page: 1, page_size: 1, is_active: true }),
         salesRepService.getAll({ page: 1, page_size: 1, is_active: false }),
-        salesRepService.getAll({ page: 1, page_size: 1, role: 'sales_agent' }),
-        salesRepService.getAll({ page: 1, page_size: 1, role: 'admin' }),
       ]);
-
+      const total = (totalRes?.count != null) ? totalRes.count : (totalRes?.results?.length || 0);
       const active = activeRes?.count != null ? activeRes.count : 0;
-      const inactive = inactiveRes?.count != null ? inactiveRes.count : 0;
-      const agents = agentsRes?.count != null ? agentsRes.count : 0;
-      const admins = adminsRes?.count != null ? adminsRes.count : 0;
+      const inactive = inactiveRes?.count != null ? inactiveRes.count : Math.max(total - active, 0);
+
+      // 2) Role-based counts via roles endpoints to avoid relying on unknown query param names
+      // Fetch roles and find IDs for 'Sales Agent' and 'Admin' (case-insensitive)
+      const rolesResp = await roleService.getAll({ page: 1, page_size: 100 });
+      const roles = rolesResp?.results || rolesResp || [];
+      const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, '_');
+      const salesAgentRole = roles.find(r => norm(r.name) === 'sales_agent');
+      const adminRole = roles.find(r => norm(r.name) === 'admin');
+
+      let agents = 0;
+      let admins = 0;
+
+      // Prefer fast count via /roles/{id}/users/ if available, else fallback to /sales-rep-roles/ or zero
+      const fetchUsersCountByRole = async (roleId) => {
+        if (!roleId) return 0;
+        try {
+          // First attempt: one request and use 'count' if available
+          const first = await roleService.getUsersByRole(roleId, { page: 1, page_size: 200 });
+          const body = first?.data || first;
+          if (body?.count != null) {
+            return body.count;
+          }
+
+          // Fallback: paginate and sum results length
+          let total = 0;
+          let page = 1;
+          while (true) {
+            const resp = page === 1 ? body : (await roleService.getUsersByRole(roleId, { page, page_size: 200 }));
+            const data = resp?.data || resp;
+            const chunk = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+            total += chunk.length;
+            const next = data?.next;
+            if (!next || chunk.length === 0) break;
+            page += 1;
+          }
+          return total;
+        } catch (e) {
+          return 0;
+        }
+      };
+
+      [agents, admins] = await Promise.all([
+        fetchUsersCountByRole(salesAgentRole?.id),
+        fetchUsersCountByRole(adminRole?.id),
+      ]);
 
       setTotalCount(total);
       setActiveCount(active);
