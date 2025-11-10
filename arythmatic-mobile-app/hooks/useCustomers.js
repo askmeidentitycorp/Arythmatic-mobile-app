@@ -134,7 +134,7 @@ export const useCustomer = (id, useNested = true) => {
   return { customer, loading, error, refresh };
 };
 
-export const useCustomerMetrics = () => {
+export const useCustomerMetrics = (params = {}) => {
   const [totalCount, setTotalCount] = useState(0);
   const [individualCount, setIndividualCount] = useState(0);
   const [businessCount, setBusinessCount] = useState(0);
@@ -146,12 +146,13 @@ export const useCustomerMetrics = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('📊 Fetching customer metrics with params:', params);
       // Use minimal page_size to get counts from API (server returns count)
       const [totalRes, indivRes, bizRes, deletedRes] = await Promise.all([
-        customerService.getAll({ page: 1, page_size: 1 }),
-        customerService.getAll({ page: 1, page_size: 1, type: 'Individual' }),
-        customerService.getAll({ page: 1, page_size: 1, type: 'Business' }),
-        customerService.getAll({ page: 1, page_size: 1, is_deleted: true }),
+        customerService.getAll({ page: 1, page_size: 1, ...params }),
+        customerService.getAll({ page: 1, page_size: 1, type: 'Individual', ...params }),
+        customerService.getAll({ page: 1, page_size: 1, type: 'Business', ...params }),
+        customerService.getAll({ page: 1, page_size: 1, is_deleted: true, ...params }),
       ]);
 
       const total = totalRes?.count || 0;
@@ -173,7 +174,7 @@ export const useCustomerMetrics = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [JSON.stringify(params)]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 

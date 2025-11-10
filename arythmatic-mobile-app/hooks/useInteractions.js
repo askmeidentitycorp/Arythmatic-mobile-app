@@ -102,7 +102,7 @@ export const useInteractions = (params = {}, pageSize = 10, useNested = true) =>
   };
 };
 
-export const useInteractionMetrics = () => {
+export const useInteractionMetrics = (params = {}) => {
   const [totalCount, setTotalCount] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [inProgressCount, setInProgressCount] = useState(0);
@@ -115,12 +115,13 @@ export const useInteractionMetrics = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('📊 Fetching interaction metrics with params:', params);
       const [totalRes, nRes, ipRes, cRes, xRes] = await Promise.all([
-        interactionService.getAll({ page: 1, page_size: 1 }),
-        interactionService.getAll({ page: 1, page_size: 1, status: 'new' }),
-        interactionService.getAll({ page: 1, page_size: 1, status: 'in_progress' }),
-        interactionService.getAll({ page: 1, page_size: 1, status: 'completed' }),
-        interactionService.getAll({ page: 1, page_size: 1, status: 'cancelled' }),
+        interactionService.getAll({ page: 1, page_size: 1, ...params }),
+        interactionService.getAll({ page: 1, page_size: 1, status: 'new', ...params }),
+        interactionService.getAll({ page: 1, page_size: 1, status: 'in_progress', ...params }),
+        interactionService.getAll({ page: 1, page_size: 1, status: 'completed', ...params }),
+        interactionService.getAll({ page: 1, page_size: 1, status: 'cancelled', ...params }),
       ]);
       setTotalCount(totalRes?.count || 0);
       setNewCount(nRes?.count || 0);
@@ -131,7 +132,7 @@ export const useInteractionMetrics = () => {
       setError(err.message || 'Failed to fetch interaction metrics');
       setTotalCount(0); setNewCount(0); setInProgressCount(0); setCompletedCount(0); setCancelledCount(0);
     } finally { setLoading(false); }
-  }, []);
+  }, [JSON.stringify(params)]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
   const refresh = useCallback(() => fetchMetrics(), [fetchMetrics]);

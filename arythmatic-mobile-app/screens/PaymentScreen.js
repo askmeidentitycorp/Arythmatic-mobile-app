@@ -26,6 +26,7 @@ import { paymentService } from '../services/paymentService';
 import * as FileSystem from 'expo-file-system';
 import DarkPicker from '../components/Customer/DarkPicker';
 import CustomerPagination from '../components/Customer/CustomerPagination';
+import { periodParams } from '../utils/dateRanges';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -163,8 +164,11 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   console.log('\n🟢 PaymentScreen mounted');
   
   // Use custom hooks for data fetching
-  const { payments, loading, error, refresh: refreshPayments, pagination, goToPage } = usePayments({ }, 10, true);
-  const { metrics: kpiCounts } = usePaymentMetrics();
+  // Build query params from filters (initialized below)
+  const [searchParams, setSearchParams] = useState({});
+
+  const { payments, loading, error, refresh: refreshPayments, pagination, goToPage } = usePayments(searchParams, 10, true);
+  const { metrics: kpiCounts } = usePaymentMetrics(searchParams);
   const { createPayment, updatePayment, processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
   
   console.log('🟢 PaymentScreen state:', { 
@@ -179,7 +183,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     searchText: "", 
     status: "", 
     method: "",
-    dateRange: "",
+    dateRange: "This Month",
     minAmount: "",
     maxAmount: ""
   });
@@ -254,6 +258,26 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     };
   }, [payments, kpiCounts]);
 
+  // Update search params whenever filters change
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = {};
+      // Search
+      if (localFilters.searchText) params.search = localFilters.searchText;
+      // Status mapping to API values (lowercase)
+      if (localFilters.status) params.status = localFilters.status.toLowerCase();
+      // Payment method
+      if (localFilters.method) params.payment_method = localFilters.method;
+      // Period params
+      if (localFilters.dateRange) Object.assign(params, periodParams(localFilters.dateRange));
+      // Amount range if supported by API
+      if (localFilters.minAmount) params.amount__gte = localFilters.minAmount;
+      if (localFilters.maxAmount) params.amount__lte = localFilters.maxAmount;
+      setSearchParams(params);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localFilters]);
+
   // Currency breakdown list (normalized and merged by code)
   const currencyBreakdownList = useMemo(() => {
     const fromServer = kpiCounts?.summary_by_currency;
@@ -303,7 +327,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       searchText: "", 
       status: "", 
       method: "",
-      dateRange: "",
+      dateRange: "This Month",
       minAmount: "",
       maxAmount: ""
     });

@@ -19,9 +19,9 @@ export const paymentService = {
   // - Split successful vs unsuccessful payments
   // - Cross-reference invoice and product data for financial reporting
   // Each payment includes: amount, currency, status, invoice (UUID), invoice_details (full invoice with line items)
-  getCounts: async () => {
+  getCounts: async (params = {}) => {
     try {
-      console.log('📊 Fetching payment counts from API...');
+      console.log('📊 Fetching payment counts from API...', params);
       // Fetch ALL payments with pagination loop
       let allPayments = [];
       let page = 1;
@@ -29,7 +29,7 @@ export const paymentService = {
       const pageSize = 100;
       
       while (hasMore) {
-        const response = await apiClient.get('/payments-nested/', { page, page_size: pageSize });
+        const response = await apiClient.get('/payments-nested/', { page, page_size: pageSize, ...params });
         const payments = response?.results || response?.data?.results || [];
         
         if (!payments || payments.length === 0) {

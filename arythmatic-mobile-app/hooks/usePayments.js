@@ -155,7 +155,7 @@ export const usePayment = (id, useNested = true) => {
   return { payment, loading, error, refresh };
 };
 
-export const usePaymentMetrics = () => {
+export const usePaymentMetrics = (params = {}) => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -164,9 +164,9 @@ export const usePaymentMetrics = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔵 Fetching payment KPI counts...');
+      console.log('🔵 Fetching payment KPI counts...', params);
       
-      const counts = await paymentService.getCounts();
+      const counts = await paymentService.getCounts(params);
       console.log('🔵 KPI Counts received:', counts);
       
       setMetrics(counts);
@@ -177,7 +177,7 @@ export const usePaymentMetrics = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [JSON.stringify(params)]);
 
   useEffect(() => { 
     fetchMetrics(); 
