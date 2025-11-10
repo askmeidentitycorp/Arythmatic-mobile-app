@@ -608,10 +608,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         />
 
         {/* KPIs */}
-        <InvoiceKPIs
-          invoices={invoices}
-          totalCount={pagination.totalCount}
-        />
+        <InvoiceKPIs />
 
         {/* Search and Filters */}
         <InvoiceSearchAndFilters

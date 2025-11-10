@@ -165,7 +165,7 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
   // Use custom hooks for data fetching
   const { payments, loading, error, refresh: refreshPayments, pagination, goToPage } = usePayments({ }, 10, true);
   const { metrics: kpiCounts } = usePaymentMetrics();
-  const { processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
+  const { createPayment, updatePayment, processPayment, voidPayment, refundPayment, deletePayment } = usePaymentMutations();
   
   console.log('🟢 PaymentScreen state:', { 
     paymentsLength: payments.length, 
@@ -182,6 +182,20 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     dateRange: "",
     minAmount: "",
     maxAmount: ""
+  });
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [editingPaymentId, setEditingPaymentId] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({
+    invoice: '',
+    amount: '',
+    currency: 'USD',
+    paymentMethod: 'Credit Card',
+    status: 'success',
+    transaction_id: '',
+    external_reference: '',
+    payment_date: new Date().toISOString().split('T')[0],
   });
 
 
@@ -1714,5 +1728,49 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 8,
     marginTop: 12,
+  },
+  
+  // Breakdown Panel Styles
+  breakdownPanel: {
+    backgroundColor: colors.panel,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  breakdownTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  breakdownRow: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  breakdownCode: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  breakdownCount: {
+    fontSize: 13,
+    color: colors.subtext,
+    marginBottom: 6,
+  },
+  breakdownTotal: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  breakdownSub: {
+    fontSize: 12,
+    color: colors.subtext,
+    marginLeft: 8,
   },
 });
