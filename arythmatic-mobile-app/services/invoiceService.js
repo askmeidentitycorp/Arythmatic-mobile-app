@@ -163,16 +163,16 @@ export const invoiceService = {
     }
   },
   // Aggregated invoice counts and values (currency-aware)
-  getCounts: async () => {
+  getCounts: async (params = {}) => {
     try {
-      console.log('📊 Fetching invoice counts from API...');
+      console.log('📊 Fetching invoice counts from API...', params);
       let allInvoices = [];
       let page = 1;
       let hasMore = true;
       const pageSize = 100;
 
       while (hasMore) {
-        const response = await apiClient.get('/invoices-nested/', { page, page_size: pageSize });
+        const response = await apiClient.get('/invoices-nested/', { page, page_size: pageSize, ...params });
         const invoices = response?.results || response?.data?.results || [];
         if (!invoices || invoices.length === 0) { hasMore = false; break; }
         allInvoices = allInvoices.concat(invoices);

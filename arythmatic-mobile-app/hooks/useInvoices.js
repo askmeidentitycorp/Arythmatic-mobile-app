@@ -29,6 +29,11 @@ export const useInvoices = (params = {}, pageSize = 10, useNested = true) => {
         ...stableParams,
       };
 
+      // Default server-side ordering by newest first (if API supports)
+      if (!('ordering' in requestParams)) {
+        requestParams.ordering = '-created_at';
+      }
+
       console.log('🔍 Fetching invoices with params:', requestParams);
 
       const response = useNested
@@ -140,7 +145,7 @@ export const useInvoice = (id, useNested = true) => {
   return { invoice, loading, error, refresh };
 };
 
-export const useInvoiceMetrics = () => {
+export const useInvoiceMetrics = (params = {}) => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -149,7 +154,7 @@ export const useInvoiceMetrics = () => {
     try {
       setLoading(true);
       setError(null);
-      const counts = await invoiceService.getCounts();
+      const counts = await invoiceService.getCounts(params);
       setMetrics(counts);
     } catch (err) {
       setError(err.message || 'Failed to fetch invoice metrics');
@@ -157,7 +162,7 @@ export const useInvoiceMetrics = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [JSON.stringify(params)]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
   const refresh = useCallback(() => fetchMetrics(), [fetchMetrics]);

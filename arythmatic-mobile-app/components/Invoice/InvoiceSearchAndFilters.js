@@ -70,6 +70,25 @@ const InvoiceSearchAndFilters = ({
             </View>
           </View>
 
+          {/* Period filter (align with Dashboard) */}
+          <View style={styles.filtersRow}>
+            <View style={styles.filterItem}>
+              <Text style={styles.inputLabel}>Date Range</Text>
+              <DarkPicker
+                selectedValue={filters.dateRange || ''}
+                onValueChange={(v) => onFiltersChange({ ...filters, dateRange: v })}
+                items={[
+                  { label: 'All Time', value: '' },
+                  { label: 'This Week', value: 'This Week' },
+                  { label: 'This Month', value: 'This Month' },
+                  { label: 'This Quarter', value: 'This Quarter' },
+                  { label: 'This Year', value: 'This Year' },
+                ]}
+                placeholder="All Time"
+              />
+            </View>
+          </View>
+
           <TouchableOpacity style={styles.clearButton} onPress={onClearFilters}>
             <Text style={styles.clearButtonText}>Clear All</Text>
           </TouchableOpacity>

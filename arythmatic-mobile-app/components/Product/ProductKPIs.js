@@ -1,7 +1,8 @@
 // components/Product/ProductKPIs.js
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { colors } from '../../constants/config';
+import { useProductMetrics } from '../../hooks/useProducts';
 
 const KPI = ({ label, value, color = "#9695D7" }) => (
   <View style={styles.kpiBox}>
@@ -10,48 +11,24 @@ const KPI = ({ label, value, color = "#9695D7" }) => (
   </View>
 );
 
-const ProductKPIs = ({ products, totalCount, activeCount, digitalCount, physicalCount, serviceCount }) => {
-  const metrics = React.useMemo(() => {
-    console.log('Calculating Product KPIs from:', products.length, 'products');
-    console.log('Sample product data:', products[0]);
+const ProductKPIs = () => {
+  const { totalCount, activeCount, digitalCount, physicalCount, serviceCount, loading } = useProductMetrics();
 
-    // FIXED: Count by productType (matching web app logic)
-    const getType = (p) => (p.productType || p.product_type || '').toLowerCase();
-    const isActiveFn = (p) => (p.isActive !== undefined ? p.isActive : p.is_active === true);
-
-    const digital = digitalCount ?? products.filter((p) => getType(p) === 'digital').length;
-    const physical = physicalCount ?? products.filter((p) => getType(p) === 'physical').length;
-    const service = serviceCount ?? products.filter((p) => getType(p) === 'service').length;
-
-    const active = activeCount ?? products.filter((p) => isActiveFn(p)).length;
-    const inactive = products.filter((p) => !isActiveFn(p)).length;
-
-    console.log('Calculated Product Metrics:', {
-      total: totalCount,
-      digital,
-      physical,
-      service,
-      active,
-      inactive,
-      pageSize: products.length 
-    });
-
-    return {
-      total: totalCount,
-      digital,
-      physical,
-      service,
-      active
-    };
-  }, [products, totalCount]);
+  if (loading && totalCount === 0) {
+    return (
+      <View style={[styles.kpis, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.kpis}>
-      <KPI label="Total" value={metrics.total} color="#1890ff" />
-      <KPI label="Active" value={metrics.active} color="#52c41a" />
-      <KPI label="Digital" value={metrics.digital} color="#52c41a" />
-      <KPI label="Physical" value={metrics.physical} color="#faad14" />
-      <KPI label="Service" value={metrics.service} color="#722ed1" />
+      <KPI label="Total Products" value={totalCount || 0} color="#1890ff" />
+      <KPI label="Active" value={activeCount || 0} color="#52c41a" />
+      <KPI label="Digital" value={digitalCount || 0} color="#52c41a" />
+      <KPI label="Physical" value={physicalCount || 0} color="#faad14" />
+      <KPI label="Service" value={serviceCount || 0} color="#722ed1" />
     </View>
   );
 };

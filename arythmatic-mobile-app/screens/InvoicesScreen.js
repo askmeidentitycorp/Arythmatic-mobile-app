@@ -32,6 +32,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConfig';
 import { BASE_URL } from '../services/apiClient';
+import { periodParams } from '../utils/dateRanges';
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -67,6 +68,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
   const [filters, setFilters] = useState({
     status: '',
     currency: '',
+    dateRange: 'This Month',
   });
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
@@ -112,6 +114,11 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         params.status = statusMap[filters.status] || filters.status;
       }
       if (filters.currency) params.currency = filters.currency;
+
+      // Append period params (DRF-compatible) when a date range is chosen
+      if (filters.dateRange) {
+        Object.assign(params, periodParams(filters.dateRange));
+      }
 
       if (customerFilter) params.customer = customerFilter.id;
       setSearchParams(params);
@@ -167,6 +174,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     setFilters({
       status: '',
       currency: '',
+      dateRange: 'This Month',
     });
   };
 
@@ -608,7 +616,7 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
         />
 
         {/* KPIs */}
-        <InvoiceKPIs />
+        <InvoiceKPIs params={searchParams} />
 
         {/* Search and Filters */}
         <InvoiceSearchAndFilters

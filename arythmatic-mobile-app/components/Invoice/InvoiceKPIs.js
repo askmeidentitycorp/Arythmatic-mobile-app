@@ -5,8 +5,8 @@ import { colors } from '../../constants/config';
 import { useInvoiceMetrics } from '../../hooks/useInvoices';
 import { symbol } from '../../utils/currency';
 
-const InvoiceKPIs = () => {
-  const { metrics, loading } = useInvoiceMetrics();
+const InvoiceKPIs = ({ params }) => {
+  const { metrics, loading } = useInvoiceMetrics(params);
 
   // Helper to format currency values from API response
   const joinCurrencies = (obj, key) => {

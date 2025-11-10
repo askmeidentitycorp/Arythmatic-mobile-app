@@ -1,8 +1,9 @@
 // components/Customer/CustomerKPIs.js
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { colors } from '../../constants/config';
+import { useCustomerMetrics } from '../../hooks/useCustomers';
 
 const KPI = ({ label, value, color = "#9695D7" }) => (
   <View style={styles.kpiBox}>
@@ -11,53 +12,23 @@ const KPI = ({ label, value, color = "#9695D7" }) => (
   </View>
 );
 
-const CustomerKPIs = ({ customers = [], totalCount = 0, individualCount, businessCount, activeCount }) => {
-  const metrics = React.useMemo(() => {
-    // FIXED: Add safety check for undefined customers
-    if (!customers || !Array.isArray(customers)) {
-      console.log('CustomerKPIs: customers is not an array:', customers);
-      return {
-        total: totalCount,
-        individual: 0,
-        business: 0,
-        active: 0
-      };
-    }
+const CustomerKPIs = () => {
+  const { totalCount, individualCount, businessCount, activeCount, loading } = useCustomerMetrics();
 
-    console.log('Calculating KPIs from customers:', customers.length);
-    console.log('Sample customer data:', customers[0]);
-
-    // Count by type (Individual/Business)
-    const individual = individualCount ?? customers.filter((c) => c?.type === "Individual").length;
-    const business = businessCount ?? customers.filter((c) => c?.type === "Business").length;
-
-    // Active based on is_deleted field
-    const active = activeCount ?? customers.filter((c) => c?.is_deleted === false || !c?.is_deleted).length;
-    const deleted = customers.filter((c) => c?.is_deleted === true).length;
-
-    console.log('Calculated metrics:', {
-      total: totalCount,
-      individual,
-      business,
-      active,
-      deleted,
-      pageSize: customers.length
-    });
-
-    return {
-      total: totalCount,
-      individual,
-      business,
-      active
-    };
-  }, [customers, totalCount]);
+  if (loading && totalCount === 0) {
+    return (
+      <View style={[styles.kpis, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.kpis}>
-      <KPI label="Total Customers" value={metrics.total} color="#4CAF50" />
-      <KPI label="Individual" value={metrics.individual} color="#2196F3" />
-      <KPI label="Business" value={metrics.business} color="#FF9800" />
-      <KPI label="Active" value={metrics.active} color="#9C27B0" />
+      <KPI label="Total Customers" value={totalCount || 0} color="#4CAF50" />
+      <KPI label="Individual" value={individualCount || 0} color="#2196F3" />
+      <KPI label="Business" value={businessCount || 0} color="#FF9800" />
+      <KPI label="Active" value={activeCount || 0} color="#9C27B0" />
     </View>
   );
 };
