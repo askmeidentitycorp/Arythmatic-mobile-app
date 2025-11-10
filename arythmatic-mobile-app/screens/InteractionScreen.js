@@ -428,7 +428,6 @@ export default function InteractionScreen({ navigation, onBack, initialRepId, in
           totalCount={pagination.totalCount}
           repFilter={repFilter}
           onClearRepFilter={handleClearRepFilter}
-          onBack={onBack}
         />
         
         <InteractionKPIs 

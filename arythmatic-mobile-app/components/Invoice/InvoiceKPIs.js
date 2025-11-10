@@ -5,15 +5,6 @@ import { colors } from '../../constants/config';
 import { useInvoiceMetrics } from '../../hooks/useInvoices';
 import { symbol } from '../../utils/currency';
 
-const KPI = ({ label, value, color = "#9695D7" }) => (
-  <View style={styles.kpiBox}>
-    <Text style={styles.kpiLabel}>{label}</Text>
-    <Text style={[styles.kpiValue, { color }]}>
-      {value}
-    </Text>
-  </View>
-);
-
 const InvoiceKPIs = () => {
   const { metrics, loading } = useInvoiceMetrics();
 
@@ -29,7 +20,7 @@ const InvoiceKPIs = () => {
 
   if (loading && !metrics) {
     return (
-      <View style={[styles.kpis, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+      <View style={[styles.kpisContainer, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
         <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
@@ -38,52 +29,89 @@ const InvoiceKPIs = () => {
   const safe = metrics || { status_counts: {}, summary_by_currency: {} };
   const sc = safe.status_counts || {};
 
-  const k = {
-    total: safe.total || 0,
-    totalValue: joinCurrencies(safe.summary_by_currency, 'total_value'),
-    paidValue: joinCurrencies(safe.summary_by_currency, 'paid_value'),
-    pendingValue: joinCurrencies(safe.summary_by_currency, 'pending_value'),
-    overdue: sc.overdue || 0,
-    draft: sc.draft || 0,
-  };
+  const totalValue = joinCurrencies(safe.summary_by_currency, 'total_value');
+  const paidValue = joinCurrencies(safe.summary_by_currency, 'paid_value');
+  const pendingValue = joinCurrencies(safe.summary_by_currency, 'pending_value');
 
   return (
-    <View style={styles.kpis}>
-      <KPI label="Total" value={String(k.total)} color="#1890ff" />
-      <KPI label="Total Value" value={k.totalValue} color="#1890ff" />
-      <KPI label="Paid" value={k.paidValue} color="#52c41a" />
-      <KPI label="Pending" value={k.pendingValue} color="#faad14" />
-      <KPI label="Overdue" value={String(k.overdue)} color="#ff4d4f" />
-      <KPI label="Draft" value={String(k.draft)} color="#8c8c8c" />
+    <View style={styles.kpisContainer}>
+      {/* Top Row - Main KPIs */}
+      <View style={styles.mainKPIRow}>
+        <View style={styles.mainKPI}>
+          <Text style={styles.mainKPILabel}>Total</Text>
+          <Text style={[styles.mainKPIValue, { color: '#1890ff' }]}>{safe.total || 0}</Text>
+        </View>
+        <View style={styles.mainKPI}>
+          <Text style={styles.mainKPILabel}>Total Value</Text>
+          <Text style={[styles.mainKPIValue, { color: '#1890ff' }]}>{totalValue}</Text>
+        </View>
+        <View style={styles.mainKPI}>
+          <Text style={styles.mainKPILabel}>Paid</Text>
+          <Text style={[styles.mainKPIValue, { color: '#52c41a' }]}>{paidValue}</Text>
+        </View>
+      </View>
+      
+      {/* Bottom Row - Status KPIs */}
+      <View style={styles.statusKPIRow}>
+        <View style={styles.statusKPI}>
+          <Text style={styles.statusKPILabel}>Pending</Text>
+          <Text style={[styles.statusKPIValue, { color: '#faad14' }]}>{pendingValue}</Text>
+        </View>
+        <View style={styles.statusKPI}>
+          <Text style={styles.statusKPILabel}>Overdue</Text>
+          <Text style={[styles.statusKPIValue, { color: '#ff4d4f' }]}>{sc.overdue || 0}</Text>
+        </View>
+        <View style={styles.statusKPI}>
+          <Text style={styles.statusKPILabel}>Draft</Text>
+          <Text style={[styles.statusKPIValue, { color: '#8c8c8c' }]}>{sc.draft || 1}</Text>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  kpis: {
+  kpisContainer: {
+    marginBottom: 20,
+  },
+  mainKPIRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 16,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 12,
   },
-  kpiBox: {
-    backgroundColor: colors.panel,
-    borderRadius: 12,
-    padding: 10,
-    width: "31%",
-    marginBottom: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
+  mainKPI: {
+    flex: 1,
+    alignItems: 'center',
   },
-  kpiLabel: {
+  mainKPILabel: {
     color: colors.subtext,
-    fontSize: 11
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 8,
   },
-  kpiValue: {
-    fontWeight: "700",
-    fontSize: 16,
-    marginTop: 2
+  mainKPIValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  statusKPIRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statusKPI: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statusKPILabel: {
+    color: colors.subtext,
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  statusKPIValue: {
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
 

@@ -2,16 +2,9 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../constants/config';
 
-const InteractionHeader = ({ onAddPress, onExport, totalCount, repFilter, onClearRepFilter, onBack }) => {
+const InteractionHeader = ({ onAddPress, onExport, totalCount, repFilter, onClearRepFilter }) => {
   return (
     <View>
-      {/* Back Button */}
-      {onBack && (
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back to Sales Reps</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Active Rep Filter */}
       {repFilter && (
         <View style={styles.activeFilterContainer}>
@@ -44,17 +37,6 @@ const InteractionHeader = ({ onAddPress, onExport, totalCount, repFilter, onClea
 };
 
 const styles = StyleSheet.create({
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    padding: 8,
-  },
-  backButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   activeFilterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
