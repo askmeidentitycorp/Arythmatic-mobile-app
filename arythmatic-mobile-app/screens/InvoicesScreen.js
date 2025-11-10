@@ -68,8 +68,10 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
   const [filters, setFilters] = useState({
     status: '',
     currency: '',
-    dateRange: 'This Month',
   });
+
+  // Hidden filter: always apply 'This Month' period (synced with Dashboard default)
+  const dateRangeFilter = 'This Month';
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
     invoiceNumber: "",
@@ -115,10 +117,8 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
       }
       if (filters.currency) params.currency = filters.currency;
 
-      // Append period params (DRF-compatible) when a date range is chosen
-      if (filters.dateRange) {
-        Object.assign(params, periodParams(filters.dateRange));
-      }
+      // Always apply 'This Month' period (synced with Dashboard default)
+      Object.assign(params, periodParams(dateRangeFilter));
 
       if (customerFilter) params.customer = customerFilter.id;
       setSearchParams(params);
@@ -174,7 +174,6 @@ export default function InvoiceScreen({ initialCustomerId, initialCustomerName }
     setFilters({
       status: '',
       currency: '',
-      dateRange: 'This Month',
     });
   };
 

@@ -183,10 +183,12 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
     searchText: "", 
     status: "", 
     method: "",
-    dateRange: "This Month",
     minAmount: "",
     maxAmount: ""
   });
+
+  // Hidden filter: always apply 'This Month' period (synced with Dashboard default)
+  const dateRangeFilter = 'This Month';
   
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -268,8 +270,8 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       if (localFilters.status) params.status = localFilters.status.toLowerCase();
       // Payment method
       if (localFilters.method) params.payment_method = localFilters.method;
-      // Period params
-      if (localFilters.dateRange) Object.assign(params, periodParams(localFilters.dateRange));
+      // Always apply 'This Month' period (synced with Dashboard default)
+      Object.assign(params, periodParams(dateRangeFilter));
       // Amount range if supported by API
       if (localFilters.minAmount) params.amount__gte = localFilters.minAmount;
       if (localFilters.maxAmount) params.amount__lte = localFilters.maxAmount;
@@ -327,7 +329,6 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
       searchText: "", 
       status: "", 
       method: "",
-      dateRange: "This Month",
       minAmount: "",
       maxAmount: ""
     });
@@ -691,20 +692,6 @@ export default function PaymentScreen({ onNavigateToDetails, navigation }) {
               value={localFilters.searchText}
               onChangeText={(v) => setLocalFilters((f) => ({ ...f, searchText: v }))}
               style={styles.input}
-            />
-
-            {/* Date Range filter */}
-            <DarkPicker
-              selectedValue={localFilters.dateRange || ""}
-              onValueChange={(v) => setLocalFilters((f) => ({ ...f, dateRange: v }))}
-              items={[
-                { label: "All Time", value: "" },
-                { label: "This Week", value: "This Week" },
-                { label: "This Month", value: "This Month" },
-                { label: "This Quarter", value: "This Quarter" },
-                { label: "This Year", value: "This Year" },
-              ]}
-              placeholder="All Time"
             />
 
             {/* Amount Range filter */}
